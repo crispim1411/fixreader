@@ -1,8 +1,6 @@
 use anyhow::Result;
-
 use quick_xml::Reader;
 use serde::Deserialize;
-
 use std::path::Path;
 
 #[derive(Deserialize, Debug)]
@@ -17,31 +15,31 @@ struct FixSchema {
 #[derive(Deserialize, Debug)]
 struct Header {
     #[serde(rename = "$value")]
-    fields: Vec<FieldHeader>,
+    values: Vec<FieldHeader>,
 }
 
 #[derive(Deserialize, Debug)]
 struct Trailer {
     #[serde(rename = "$value")]
-    fields: Vec<FieldHeader>,
+    values: Vec<FieldHeader>,
 }
 
 #[derive(Deserialize, Debug)]
 struct Messages {
     #[serde(rename = "$value")]
-    messages: Vec<Message>,
+    values: Vec<Message>,
 }
 
 #[derive(Deserialize, Debug)]
 struct Components {
     #[serde(rename = "$value")]
-    fields: Vec<Component>,
+    values: Vec<Component>,
 }
 
 #[derive(Deserialize, Debug)]
 struct Fields {
     #[serde(rename = "$value")]
-    fields: Vec<Field>,
+    values: Vec<Field>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -129,19 +127,13 @@ fn main() -> Result<()> {
 
         let found = {
             match search_mode.as_ref() {
-                "0" => Search::Field(schema.fields.fields.iter().find(|item| item.name == key)),
-                "1" => Search::Field(schema.fields.fields.iter().find(|item| item.number == key)),
-                "2" => Search::Message(
-                    schema
-                        .messages
-                        .messages
-                        .iter()
-                        .find(|item| item.name == key),
-                ),
+                "0" => Search::Field(schema.fields.values.iter().find(|item| item.name == key)),
+                "1" => Search::Field(schema.fields.values.iter().find(|item| item.number == key)),
+                "2" => Search::Message(schema.messages.values.iter().find(|item| item.name == key)),
                 "3" => Search::Message(
                     schema
                         .messages
-                        .messages
+                        .values
                         .iter()
                         .find(|item| item.msgtype == key),
                 ),
