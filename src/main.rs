@@ -1,55 +1,47 @@
 use anyhow::Result;
-use quick_xml::de::{from_reader, DeError};
-use quick_xml::events::{BytesStart, Event};
+
 use quick_xml::Reader;
 use serde::Deserialize;
-use std::fs::File;
-use std::io::BufReader;
+
 use std::path::Path;
-
-struct FixMessage;
-
-// #[derive(Deserialize, Debug)]
-// struct FixSchema {
-//     fix: SchemaItems,
-// }
 
 #[derive(Deserialize, Debug)]
 struct FixSchema {
-    header: SchemaItem,
-    trailer: SchemaItem,
-    messages: SchemaItem,
-    components: SchemaItem,
-    fields: SchemaItem,
+    header: Header,
+    trailer: Trailer,
+    messages: Messages,
+    components: Components,
+    fields: Fields,
 }
 
 #[derive(Deserialize, Debug)]
-enum SchemaItem {
-    #[serde(rename = "header")]
-    Header {
-        #[serde(rename = "$value")]
-        field: Vec<FieldHeader>,
-    },
-    #[serde(rename = "trailer")]
-    Trailer {
-        #[serde(rename = "$value")]
-        field: Vec<FieldHeader>,
-    },
-    #[serde(rename = "messages")]
-    Messages {
-        #[serde(rename = "$value")]
-        message: Vec<Message>,
-    },
-    #[serde(rename = "components")]
-    Components {
-        #[serde(rename = "$value")]
-        field: Vec<Component>,
-    },
-    #[serde(rename = "fields")]
-    Fields {
-        #[serde(rename = "$value")]
-        field: Vec<Field>,
-    },
+struct Header {
+    #[serde(rename = "$value")]
+    fields: Vec<FieldHeader>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Trailer {
+    #[serde(rename = "$value")]
+    fields: Vec<FieldHeader>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Messages {
+    #[serde(rename = "$value")]
+    messages: Vec<Message>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Components {
+    #[serde(rename = "$value")]
+    fields: Vec<Component>,
+}
+
+#[derive(Deserialize, Debug)]
+struct Fields {
+    #[serde(rename = "$value")]
+    fields: Vec<Field>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -85,7 +77,7 @@ struct Component {
 #[derive(Deserialize, Debug)]
 struct Field {
     #[serde(rename = "@number")]
-    number: usize,
+    number: String,
     #[serde(rename = "@name")]
     name: String,
     #[serde(rename = "@type")]
@@ -102,40 +94,64 @@ struct FieldValues {
     description: String,
 }
 
-fn main() -> Result<()> {
-    /*let mut reader = Reader::from_file(Path::new("FIX44RFQ.xml"))?;
+enum Search<'a> {
+    Field(Option<&'a Field>),
+    Message(Option<&'a Message>),
+    None,
+}
 
-    let mut count = 0;
-    let mut txt = Vec::new();
-    let mut buf = Vec::new();
+fn main() -> Result<()> {
+    let reader = Reader::from_file(&Path::new("FIX44RFQ.xml"))?;
+    let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner())?;
 
     loop {
-        match reader.read_event_into(&mut buf) {
-            Ok(Event::Start(ev)) => {
-                let attributes: Vec<String> = ev
-                    .attributes()
-                    .map(|att| {
-                        std::str::from_utf8(att.unwrap().value.as_ref())
-                            .unwrap()
-                            .into()
-                    })
-                    .collect();
-                println!(
-                    "{:?}",
-                    std::str::from_utf8(ev.local_name().into_inner()).unwrap()
-                );
-                println!("Attributes: {:?}", attributes);
+        let stdin = std::io::stdin();
+
+        println!(
+            "Choose search (default=1):
+            \r 0 - field by name
+            \r 1 - field by tag
+            \r 2 - message by name
+            \r 3 - message by msgtypes\n"
+        );
+        let search_mode = {
+            let mut buf = String::new();
+            stdin.read_line(&mut buf)?;
+            buf.trim().to_string()
+        };
+
+        println!("Enter key:");
+        let key = {
+            let mut buf = String::new();
+            stdin.read_line(&mut buf)?;
+            buf.trim().to_string()
+        };
+
+        let found = {
+            match search_mode.as_ref() {
+                "0" => Search::Field(schema.fields.fields.iter().find(|item| item.name == key)),
+                "1" => Search::Field(schema.fields.fields.iter().find(|item| item.number == key)),
+                "2" => Search::Message(
+                    schema
+                        .messages
+                        .messages
+                        .iter()
+                        .find(|item| item.name == key),
+                ),
+                "3" => Search::Message(
+                    schema
+                        .messages
+                        .messages
+                        .iter()
+                        .find(|item| item.msgtype == key),
+                ),
+                _ => Search::None,
             }
-            Ok(Event::Text(t)) => txt.push(t.unescape().unwrap().into_owned()),
-            Ok(Event::Eof) => break,
-            Err(err) => println!("Error on position {}: {}", reader.buffer_position(), err),
-            _ => (),
+        };
+        match found {
+            Search::Field(Some(field)) => println!("{:#?}\n", field),
+            Search::Message(Some(message)) => println!("{:#?}\n", message),
+            _ => println!("Tag not found\n"),
         }
-        buf.clear();
     }
-    */
-    let mut reader = Reader::from_file(&Path::new("FIX44RFQ.xml"))?;
-    let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner())?;
-    println!("Output: {:#?}", schema);
-    Ok(())
 }
