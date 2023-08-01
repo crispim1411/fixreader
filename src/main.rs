@@ -1,7 +1,7 @@
 use anyhow::Result;
 use quick_xml::Reader;
 use serde::Deserialize;
-use std::path::Path;
+use std::{fs::File, io::Read, path::Path};
 
 #[derive(Deserialize, Debug)]
 struct FixSchema {
@@ -99,9 +99,36 @@ enum Search<'a> {
 }
 
 fn main() -> Result<()> {
-    let reader = Reader::from_file(&Path::new("FIX44RFQ.xml"))?;
+    let reader = Reader::from_file(Path::new("FIX44RFQ.xml"))?;
     let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner())?;
 
+    let mut buf = String::new();
+    let mut file = File::open("msg.txt")?;
+    file.read_to_string(&mut buf)?;
+    println!("msg: {}", buf);
+
+    let separator = "|";
+    let pieces: Vec<String> = buf
+        .split(separator)
+        .take_while(|&element| !element.is_empty())
+        .map(|p| p.split_once('=').unwrap_or((p, p)))
+        .map(|(tag, value)| format!("{} = {}", search_tag(&schema, tag).unwrap_or(tag), value)) 
+        .collect();
+    println!("{:#?}", pieces);
+
+    Ok(())
+}
+
+fn search_tag<'a>(schema: &'a FixSchema, tag: &str) -> Option<&'a str> {
+    // search fields
+    if let Some(field) = schema.fields.values.iter().find(|item| item.number == tag) {
+        return Some(&field.name);
+    }
+    None
+}
+
+#[allow(dead_code)]
+fn iterative_mode(schema: &FixSchema) -> Result<()> {
     loop {
         let stdin = std::io::stdin();
 
@@ -111,7 +138,7 @@ fn main() -> Result<()> {
             \r 1 - field by tag
             \r 2 - message by name
             \r 3 - message by msgtypes\n"
-        );
+            );
         let search_mode = {
             let mut buf = String::new();
             stdin.read_line(&mut buf)?;
@@ -132,11 +159,11 @@ fn main() -> Result<()> {
                 "2" => Search::Message(schema.messages.values.iter().find(|item| item.name == key)),
                 "3" => Search::Message(
                     schema
-                        .messages
-                        .values
-                        .iter()
-                        .find(|item| item.msgtype == key),
-                ),
+                    .messages
+                    .values
+                    .iter()
+                    .find(|item| item.msgtype == key),
+                    ),
                 _ => Search::None,
             }
         };
@@ -147,3 +174,4 @@ fn main() -> Result<()> {
         }
     }
 }
+
