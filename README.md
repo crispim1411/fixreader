@@ -1,8 +1,9 @@
 # Leitor Fix em Rust
-No momento carrega um arquivo xml e permite buscas de campos ou mensagens fix por tag ou nome.
+No momento carrega um arquivo xml, decodifica mensagem fix e permite buscas de campos fix por tag ou nome.
 
 ### A fazer
-- testar com outros xml
-- Pesquisar tag por toda estrutura
-- importar mensagem
-- validar campos obrigatórios
+[x] testar com outros xml
+[ ] pesquisar por campos agrupados 
+[ ] ler mensagem via terminal
+[ ] validar campos obrigatórios
+[ ] GUI???
