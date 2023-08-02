@@ -1,7 +1,7 @@
 use anyhow::Result;
 use quick_xml::Reader;
 use serde::Deserialize;
-use std::{fs::File, io::Read, path::Path};
+use std::{io, path::Path};
 
 #[derive(Deserialize, Debug)]
 struct FixSchema {
@@ -102,20 +102,19 @@ fn main() -> Result<()> {
     let reader = Reader::from_file(Path::new("FIX44RFQ.xml"))?;
     let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner())?;
 
-    let mut buf = String::new();
-    let mut file = File::open("msg.txt")?;
-    file.read_to_string(&mut buf)?;
-    println!("msg: {}", buf);
-
     let separator = "|";
-    let pieces: Vec<String> = buf
-        .split(separator)
-        .take_while(|&element| !element.is_empty())
-        .map(|p| p.split_once('=').unwrap_or((p, p)))
-        .map(|(tag, value)| format!("{} = {}", search_tag(&schema, tag).unwrap_or(tag), value)) 
-        .collect();
-    println!("{:#?}", pieces);
 
+    let stdin = io::stdin();
+    for line in stdin.lines() {
+        let line = line.expect("Expect line");
+        let pieces: Vec<String> = line
+            .split(separator)
+            .take_while(|&element| !element.is_empty())
+            .map(|p| p.split_once('=').unwrap_or((p, p)))
+            .map(|(tag, value)| format!("{} = {}", search_tag(&schema, tag).unwrap_or(tag), value)) 
+            .collect();
+        println!("{:#?}", pieces);
+    }
     Ok(())
 }
 
