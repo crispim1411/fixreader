@@ -110,20 +110,30 @@ fn main() -> Result<()> {
         let pieces: Vec<String> = line
             .split(separator)
             .take_while(|&element| !element.is_empty())
-            .map(|p| p.split_once('=').unwrap_or((p, p)))
-            .map(|(tag, value)| format!("{} = {}", search_tag(&schema, tag).unwrap_or(tag), value)) 
+            .map(|p| p.split_once('=').expect("Error spliting values"))
+            .map(|(tag, value)| {
+                let (tag, value) = parse_tag(&schema, tag, value);
+                format!("{tag} = {value}")
+            })
             .collect();
         println!("{:#?}", pieces);
     }
     Ok(())
 }
 
-fn search_tag<'a>(schema: &'a FixSchema, tag: &str) -> Option<&'a str> {
+fn parse_tag<'a>(schema: &'a FixSchema, tag: &'a str, value: &'a str) -> (&'a str, &'a str) {
     // search fields
     if let Some(field) = schema.fields.values.iter().find(|item| item.number == tag) {
-        return Some(&field.name);
+        let value = {
+            if let Some(field) = field.values.iter().find(|item| item.value == value) {
+                &field.description
+            } else {
+                value
+            }
+        };
+        return (&field.name, value);
     }
-    None
+    (tag, value)
 }
 
 #[allow(dead_code)]

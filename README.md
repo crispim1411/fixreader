@@ -4,6 +4,6 @@ No momento carrega um arquivo xml, decodifica mensagem fix e permite buscas de c
 ### A fazer
 [x] testar com outros xml
 [ ] pesquisar por campos agrupados 
-[ ] ler mensagem via terminal
+[x] ler mensagem via terminal
 [ ] validar campos obrigatórios
 [ ] GUI???
