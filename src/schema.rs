@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::fmt;
 
 #[derive(Deserialize, Debug)]
 pub struct FixSchema {
@@ -39,7 +40,7 @@ pub struct Fields {
     pub values: Vec<Field>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct FieldHeader {
     #[serde(rename = "@name")]
     pub name: String,
@@ -49,7 +50,17 @@ pub struct FieldHeader {
     pub group: Vec<FieldHeader>,
 }
 
-#[derive(Deserialize, Debug)]
+impl fmt::Debug for FieldHeader {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", self.name, self.required)?;
+        for field in self.group.iter() {
+            write!(f, ",\n{} ({})", field.name, field.required)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
 pub struct Message {
     #[serde(rename = "@name")]
     pub name: String,
@@ -61,6 +72,12 @@ pub struct Message {
     pub fields: Vec<FieldHeader>,
 }
 
+impl fmt::Debug for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {} {:#?}", self.msgtype, self.name, self.fields)
+    }
+}
+
 #[derive(Deserialize, Debug)]
 pub struct Component {
     #[serde(rename = "@name")]
@@ -69,7 +86,7 @@ pub struct Component {
     pub fields: Vec<FieldHeader>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize)]
 pub struct Field {
     #[serde(rename = "@number")]
     pub number: String,
@@ -81,10 +98,26 @@ pub struct Field {
     pub values: Vec<FieldValues>,
 }
 
-#[derive(Deserialize, Debug)]
+impl fmt::Debug for Field {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {} [{}]", self.number, self.name, self.field_type)?;
+        if !self.values.is_empty() {
+            write!(f, "{:#?}", self.values)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Deserialize)]
 pub struct FieldValues {
     #[serde(rename = "@enum")]
     pub value: String,
     #[serde(rename = "@description")]
     pub description: String,
+}
+
+impl fmt::Debug for FieldValues {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} - {}", self.value, self.description)
+    }
 }
