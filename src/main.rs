@@ -29,7 +29,7 @@ fn main() -> Result<()> {
     let reader = Reader::from_file(Path::new("FIX44RFQ.xml"))?;
     let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner())?;
 
-    _ = match arg.mode {
+    let _ = match arg.mode {
         Mode::Fix => fixread_mode(&schema),
         Mode::Search => iterative_mode(&schema),
     };
@@ -40,38 +40,52 @@ fn main() -> Result<()> {
 fn fixread_mode(schema: &FixSchema) -> Result<()> {
     println!("Fix parsing mode");
 
-    let separator = "^";
+    let separator = "|";
 
     let stdin = io::stdin();
     for line in stdin.lines() {
         let line = line.expect("Expect line");
-        let pieces: Vec<String> = line
+
+        let (oks, errors): (Vec<_>, Vec<_>) = line
             .split(separator)
             .take_while(|&element| !element.is_empty())
-            .map(|p| p.split_once('=').expect("Error spliting values"))
-            .map(|(tag, value)| {
-                let (tag, value) = parse_tag(&schema, tag, value);
-                format!("{tag} = {value}")
+            .map(|p| {
+                match p.split_once('=') {
+                    Some((tag, value)) => {
+                        let (tag, value) = parse_tag(&schema, tag, value);
+                        return Ok(format!("{tag} = {value}"));
+                    }
+                    None => { 
+                        return Err(format!("Error parsing the item '{}'", p)); 
+                    }
+                }
             })
-            .collect();
-        println!("{:#?}", pieces);
+            .partition(|result| result.is_ok());
+
+        let formatted: Vec<_> = oks.into_iter().map(Result::unwrap).collect();
+        let errors: Vec<_> = errors.into_iter().map(Result::unwrap_err).collect();
+
+        println!("{:#?}", formatted);
+
+        for error in errors {
+            println!("{}", error);
+        }
     }
     Ok(())
 }
 
 fn parse_tag<'a>(schema: &'a FixSchema, tag: &'a str, value: &'a str) -> (&'a str, &'a str) {
-    // search fields
-    if let Some(field) = schema.fields.values.iter().find(|item| item.number == tag) {
-        let value = {
-            if let Some(field) = field.values.iter().find(|item| item.value == value) {
-                &field.description
-            } else {
-                value
-            }
-        };
-        return (&field.name, value);
+    match schema.fields.values.iter().find(|item| item.number == tag) {
+        Some(field) => {
+            let value = 
+                match field.values.iter().find(|item| item.value == value) {
+                    Some(field) => &field.description,
+                    None => value,
+            };
+            return (tag, value);
+        }
+        None => (tag, value)
     }
-    (tag, value)
 }
 
 fn iterative_mode(schema: &FixSchema) -> Result<()> {
