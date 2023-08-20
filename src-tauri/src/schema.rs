@@ -121,3 +121,19 @@ impl fmt::Debug for FieldValues {
         write!(f, "{} - {}", self.value, self.description)
     }
 }
+
+impl FixSchema {
+    pub fn parse(&self, tag: &str, value: &str) -> (String, String) {
+        if let Some(field) = self.fields.values.iter().find(|item| item.number == tag) {
+            let value = {
+                if let Some(field) = field.values.iter().find(|item| item.value == value) {
+                    &field.description
+                } else {
+                    value
+                }
+            };
+            return (field.name.clone(), value.to_string());
+        }
+        (tag.to_string(), value.to_string())
+    }
+}
