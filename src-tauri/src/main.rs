@@ -3,19 +3,24 @@
 
 use fixreader::FixSchema;
 use quick_xml::Reader;
+use tauri::{State, Manager};
 use std::path::Path;
 
+const SEPARATOR: &str = "^";
+
+#[derive(Debug)]
+struct Context(FixSchema);
+
 #[tauri::command]
-fn read_fix(input: &str) -> Vec<(String, String)> {
-    let Ok(reader) = Reader::from_file(Path::new("FIX44RFQ.xml")) else {
-        return vec![];
-    };
-    let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner()).unwrap();
+fn ping() {
+    println!("Pong");
+}
 
-    let separator = "^";
-
+#[tauri::command]
+fn read_fix(state: State<Context>, input: &str) -> Vec<(String, String)> {
+    let schema = &state.0;
     let result: Vec<(String, String)> = input
-        .split(separator)
+        .split(SEPARATOR)
         .take_while(|&element| !element.is_empty())
         .map(|p| {
             match p.split_once('=') {
@@ -28,8 +33,17 @@ fn read_fix(input: &str) -> Vec<(String, String)> {
 }
 
 fn main() {
+    let file_path = "FIX44RFQ.xml";
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![read_fix])
+        .setup(|app| {
+            println!("Starting...");
+            let reader = Reader::from_file(Path::new(file_path)).unwrap();
+            let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner()).unwrap();
+            println!("Loaded");
+            app.manage(Context(schema));
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![read_fix, ping])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

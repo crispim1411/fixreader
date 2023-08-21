@@ -1,9 +1,9 @@
 # Leitor Fix em Rust
-No momento carrega um arquivo xml e possui um CLI simples pras funções de decodificar mensagem fix e busca de campos.
+Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo fix.
 
 ### A fazer
 - [x] testar com outros xml
-- [ ] pesquisar por campos agrupados 
+- [x] pesquisar por campos agrupados 
 - [x] ler mensagem via terminal
 - [x] ajustar o print
 - [ ] validar campos obrigatórios
@@ -11,4 +11,6 @@ No momento carrega um arquivo xml e possui um CLI simples pras funções de deco
 - [x] separar schema para um arquivo
 - [ ] criar um arquivo FixMessage a partir de FixSchema
 - [x] GUI - Tauri
-- [ ] Schema ser movido pro context
+- [x] Schema ser movido pro context
+- [ ] Preencher na tela o xml carregado
+- [ ] Incluir busca de tags
