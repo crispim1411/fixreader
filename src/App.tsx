@@ -1,30 +1,34 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-import { appWindow } from "@tauri-apps/api/window";
-import { listen } from "@tauri-apps/api/event";
+// import { appWindow } from "@tauri-apps/api/window";
+// import { listen } from "@tauri-apps/api/event";
 
 function App() {
   const [schemaFile, setSchemaFile] = useState("");
   const [input, setInput] = useState("");
   const [fixMsg, setFixMsg] = useState([]);
 
-  listen(
-    'SchemaFile', 
-    (p) =>{
-      setSchemaFile("Anything");
-      invoke("ping");
-    }
-  );
+  // listen(
+  //   'SchemaFile', 
+  //   (p) =>{
+  //     setSchemaFile("Anything");
+  //     invoke("ping");
+  //   }
+  // );
   
   async function read_fix() {
     setFixMsg(await invoke("read_fix", { input }));
   }
 
+  invoke("ping").then((response) => {
+    setSchemaFile(response as string)
+  });
+
   return (
     <div className="container">
       <h1>Fix Reader</h1>
-      {/* <p>Schema: {schemaFile}</p> */}
+      <p>Schema: {schemaFile}</p>
 
       <form
         className="row"

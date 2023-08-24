@@ -12,5 +12,6 @@ Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo 
 - [ ] criar um arquivo FixMessage a partir de FixSchema
 - [x] GUI - Tauri
 - [x] Schema ser movido pro context
-- [ ] Preencher na tela o xml carregado
+- [x] Preencher na tela o xml carregado
+- [x] Carregar xml via config.json
 - [ ] Incluir busca de tags
