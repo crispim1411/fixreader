@@ -15,3 +15,4 @@ Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo 
 - [x] Preencher na tela o xml carregado
 - [x] Carregar xml via config.json
 - [ ] Incluir busca de tags
+- [ ] Setar separador na tela
