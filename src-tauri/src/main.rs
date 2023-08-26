@@ -4,17 +4,44 @@
 use fixreader::FixSchema;
 use quick_xml::Reader;
 use serde::{Deserialize, Serialize};
-use tauri::{State, Manager};
-use std::{path::Path, fs::File};
+use tauri::{State, Manager, App};
+use std::{fs::File, path::Path};
 
 const SEPARATOR: &str = "^";
+
+#[derive(Deserialize, Serialize, Default)]
+struct MyConfig {
+    schema_path: String,
+}
+
+trait MyMethods {
+    fn load_files(&mut self) -> Result<(String, FixSchema), String>;
+}
+
+impl MyMethods for App {
+    fn load_files(&mut self) -> Result<(String, FixSchema), String> {
+        let Some(config_file) = self.path_resolver().resolve_resource("config.json") else {
+            return Err("config.json not found".into());
+        };
+        let Ok(filename) =  File::open(&config_file) else {
+            return Err("Error trying read file".into());
+        };
+        let config: MyConfig = serde_json::from_reader(filename).unwrap();
+        let Ok(reader) = Reader::from_file(Path::new(&config.schema_path)) else {
+            return Err("schema not found".into());
+        };
+        let Ok(schema) = quick_xml::de::from_reader(reader.into_inner()) else {
+            return Err("Error reading schema".into());
+        };
+        return Ok((config.schema_path, schema));
+    }
+}
 
 #[derive(Debug)]
 struct Context {
     file: String,
-    schema: FixSchema,
+    schema: Option<FixSchema>,
 }
-    
 
 #[tauri::command]
 fn ping(state: State<Context>) -> String {
@@ -23,7 +50,9 @@ fn ping(state: State<Context>) -> String {
 
 #[tauri::command]
 fn read_fix(state: State<Context>, input: &str) -> Vec<(String, String)> {
-    let schema = &state.schema;
+    let Some(schema) = &state.schema else {
+        panic!("Schema not found in context");
+    };
     let result: Vec<(String, String)> = input
         .split(SEPARATOR)
         .take_while(|&element| !element.is_empty())
@@ -37,24 +66,17 @@ fn read_fix(state: State<Context>, input: &str) -> Vec<(String, String)> {
     return result;
 }
 
-#[derive(Deserialize, Serialize, Default)]
-struct Config {
-    schema_path: String,
-}
-
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
-            let config_file = app.path_resolver().resolve_resource("config.json").expect("Not found config.json");
-            println!("File: {:?}", config_file.as_path());
-            println!("AppDir: {:?}", app.path_resolver().app_config_dir().unwrap());
-            let config: Config = serde_json::from_reader(File::open(&config_file).unwrap()).expect("Error reading config.json");
-            println!("Starting...");
-            println!("Path: {}", &config.schema_path);
-            let reader = Reader::from_file(Path::new(&config.schema_path)).expect("schema not found");
-            let schema: FixSchema = quick_xml::de::from_reader(reader.into_inner()).expect("Error reading schema");
-            println!("Loaded");
-            app.manage(Context { file: config.schema_path, schema});
+            match app.load_files() {
+                Ok((file, schema)) => {
+                    app.manage(Context { file, schema: Some(schema)});
+                }
+                Err(e) => {
+                    app.manage(Context { file: e, schema: None});
+                }
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![read_fix, ping])
