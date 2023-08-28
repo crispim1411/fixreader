@@ -14,5 +14,7 @@ Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo 
 - [x] Schema ser movido pro context
 - [x] Preencher na tela o xml carregado
 - [x] Carregar xml via config.json
+- [ ] Dialogo pra carregar outro xml
 - [ ] Incluir busca de tags
 - [x] Setar separador na tela
+- [ ] Abrir detalhes da linha
