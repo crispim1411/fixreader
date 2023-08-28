@@ -1,55 +1,86 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-// import { appWindow } from "@tauri-apps/api/window";
-// import { listen } from "@tauri-apps/api/event";
 
-function App() {
+const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
+  const [separator, setSeparator] = useState("^");
   const [input, setInput] = useState("");
-  const [fixMsg, setFixMsg] = useState([]);
+  const [convertedLines, setConvertedLines] = useState<string[]>([]);
 
-  // listen(
-  //   'SchemaFile', 
-  //   (p) =>{
-  //     setSchemaFile("Anything");
-  //     invoke("ping");
-  //   }
-  // );
-  
-  async function read_fix() {
-    setFixMsg(await invoke("read_fix", { input }));
-  }
-
-  invoke("ping").then((response) => {
-    setSchemaFile(response as string)
+  useEffect(() => {
+    invoke("get_schema_file").then((response) => {
+      console.log('schema file');
+      setSchemaFile(response as string);
+    });
   });
 
-  return (
-    <div className="container">
-      <h1>Fix Reader</h1>
-      <p>Schema: {schemaFile}</p>
+  const readFix = async () => {
+    console.log('reading fix');
+    var result: string[][] = await invoke("read_fix", { input, separator });
+    var fixMsg = result.map((x) => x.join(": ")).join(", ")
+    setConvertedLines(convertedLines.concat(fixMsg));
+  }
 
-      <form
-        className="row"
+  return (
+    <div className="fix-reader-container">
+      <h1 className="fix-reader-title">FixReader</h1>
+      <div className="schema-section">
+        <label htmlFor="schemaFile">Schema File:</label>
+        <input
+          type="text"
+          id="schemaFile"
+          value={schemaFile}
+          disabled
+        />
+        <label htmlFor="separator">Separator:</label>
+        <input
+          type="text"
+          id="separator"
+          value={separator}
+          onChange={(e) => setSeparator(e.target.value)}
+        />
+      </div>
+      <form 
+        className="input-section"
         onSubmit={(e) => {
           e.preventDefault();
-          read_fix();
+          setConvertedLines([...convertedLines, input])
+          console.log("set input");
         }}>
+        <label htmlFor="message">Message:</label>
         <input
-          id="fix-input"
+          type="text"
+          id="message"
+          value={input}
           onChange={(e) => setInput(e.currentTarget.value)}
-          placeholder="Paste the fix message here..."
         />
-        <button type="submit">Convert</button>
+        <button onClick={(e) => {
+          e.preventDefault();
+          readFix();
+          console.log("click");
+        }}>Convert</button>
+        <button onClick={(e) => {
+          e.preventDefault();
+          setInput("");
+          setConvertedLines([]);
+        }}>Clear</button>
       </form>
-
-      
-      <ul style={{listStyle:'none'}}>
-        {fixMsg.map(el => 
-          <li key={el}>{el[0]}: {el[1]}</li>
-        )}
-      </ul>     
+      <table className="converted-table">
+        <thead>
+          <tr>
+            <th>Converted Lines</th>
+          </tr>
+        </thead>
+        <tbody>
+          {convertedLines.map((line) => 
+            (
+            <tr>
+              <td>{line}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

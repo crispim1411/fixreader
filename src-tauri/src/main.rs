@@ -7,13 +7,10 @@ use serde::{Deserialize, Serialize};
 use tauri::{State, Manager, App};
 use std::{fs::File, path::Path};
 
-const SEPARATOR: &str = "^";
-
 #[derive(Deserialize, Serialize, Default)]
 struct MyConfig {
     schema_path: String,
 }
-
 trait MyMethods {
     fn load_files(&mut self) -> Result<(String, FixSchema), String>;
 }
@@ -44,17 +41,17 @@ struct Context {
 }
 
 #[tauri::command]
-fn ping(state: State<Context>) -> String {
+fn get_schema_file(state: State<Context>) -> String {
     return state.file.clone();
 }
 
 #[tauri::command]
-fn read_fix(state: State<Context>, input: &str) -> Vec<(String, String)> {
+fn read_fix(state: State<Context>, input: &str, separator: &str) -> Vec<(String, String)> {
     let Some(schema) = &state.schema else {
         panic!("Schema not found in context");
     };
     let result: Vec<(String, String)> = input
-        .split(SEPARATOR)
+        .split(separator)
         .take_while(|&element| !element.is_empty())
         .map(|p| {
             match p.split_once('=') {
@@ -69,6 +66,13 @@ fn read_fix(state: State<Context>, input: &str) -> Vec<(String, String)> {
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
+            #[cfg(debug_assertions)] // only include this code on debug builds
+            {
+                let window = app.get_window("main").unwrap();
+                window.open_devtools();
+                window.close_devtools();
+            }
+            
             match app.load_files() {
                 Ok((file, schema)) => {
                     app.manage(Context { file, schema: Some(schema)});
@@ -79,7 +83,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_fix, ping])
+        .invoke_handler(tauri::generate_handler![read_fix, get_schema_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
+} 
