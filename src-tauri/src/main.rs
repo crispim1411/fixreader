@@ -40,17 +40,28 @@ struct Context {
     schema: Option<FixSchema>,
 }
 
+#[derive(Serialize)]
+struct FixMsg {
+    fields: Vec<Field>,
+}
+
+#[derive(Serialize)]
+struct Field {
+    tag: String,
+    value: String,
+}
+
 #[tauri::command]
 fn get_schema_file(state: State<Context>) -> String {
     return state.file.clone();
 }
 
 #[tauri::command]
-fn read_fix(state: State<Context>, input: &str, separator: &str) -> Vec<(String, String)> {
+fn read_fix(state: State<Context>, input: &str, separator: &str) -> FixMsg {
     let Some(schema) = &state.schema else {
         panic!("Schema not found in context");
     };
-    let result: Vec<(String, String)> = input
+    let fields = input
         .split(separator)
         .take_while(|&element| !element.is_empty())
         .map(|p| {
@@ -59,8 +70,9 @@ fn read_fix(state: State<Context>, input: &str, separator: &str) -> Vec<(String,
                 None => ("Error".to_string(), p.to_string())
             }
         })
+        .map(|x| Field { tag: x.0, value: x.1 })
         .collect();
-    return result;
+    return FixMsg { fields };
 }
 
 fn main() {

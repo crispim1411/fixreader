@@ -2,11 +2,20 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 
+interface FixMsg {
+  fields: Field[],
+}
+
+interface Field {
+  tag: string,
+  value: string,
+}
+
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
   const [separator, setSeparator] = useState("^");
   const [input, setInput] = useState("");
-  const [convertedLines, setConvertedLines] = useState<string[]>([]);
+  const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -15,11 +24,19 @@ const App = () => {
     });
   });
 
-  const readFix = async () => {
+  const readFix = async (e: any) => {
+    e.preventDefault();
+    if (input.length == 0) return;
+
     console.log('reading fix');
-    var result: string[][] = await invoke("read_fix", { input, separator });
-    var fixMsg = result.map((x) => x.join(": ")).join(", ")
+    var fixMsg: FixMsg[] = await invoke("read_fix", { input, separator });
     setConvertedLines(convertedLines.concat(fixMsg));
+  }
+
+  const clear = (e: any) => {
+    e.preventDefault();
+    setInput("");
+    setConvertedLines([]);
   }
 
   return (
@@ -43,11 +60,7 @@ const App = () => {
       </div>
       <form 
         className="input-section"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setConvertedLines([...convertedLines, input])
-          console.log("set input");
-        }}>
+        onSubmit={readFix}>
         <label htmlFor="message">Message:</label>
         <input
           type="text"
@@ -55,16 +68,8 @@ const App = () => {
           value={input}
           onChange={(e) => setInput(e.currentTarget.value)}
         />
-        <button onClick={(e) => {
-          e.preventDefault();
-          readFix();
-          console.log("click");
-        }}>Convert</button>
-        <button onClick={(e) => {
-          e.preventDefault();
-          setInput("");
-          setConvertedLines([]);
-        }}>Clear</button>
+        <button type="submit">Convert</button>
+        <button onClick={clear}>Clear</button>
       </form>
       <table className="converted-table">
         <thead>
@@ -73,12 +78,18 @@ const App = () => {
           </tr>
         </thead>
         <tbody>
-          {convertedLines.map((line) => 
-            (
+        {
+          convertedLines.map(msg => (
             <tr>
-              <td>{line}</td>
+              <td>
+                {
+                  msg.fields
+                    .map(field => field.tag + ": " + field.value).join(" | ")
+                }
+              </td>
             </tr>
-          ))}
+          ))
+        }
         </tbody>
       </table>
     </div>
