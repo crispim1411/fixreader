@@ -4,8 +4,8 @@
 use fixreader::FixSchema;
 use quick_xml::Reader;
 use serde::{Deserialize, Serialize};
-use tauri::{State, Manager, App};
-use std::{fs::File, path::Path};
+use tauri::{State, Manager, App, AppHandle, Error};
+use std::{fs::File, path::Path, sync::Mutex};
 
 #[derive(Deserialize, Serialize, Default)]
 struct MyConfig {
@@ -40,25 +40,30 @@ struct Context {
     schema: Option<FixSchema>,
 }
 
-#[derive(Serialize)]
+struct Schema(Option<FixSchema>);
+struct FileLoaded(String);
+struct ErrorMsg(String);
+struct SelectedLine(Mutex<Option<FixMsg>>);
+
+#[derive(Serialize, Deserialize)]
 struct FixMsg {
     fields: Vec<Field>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct Field {
     tag: String,
     value: String,
 }
 
 #[tauri::command]
-fn get_schema_file(state: State<Context>) -> String {
-    return state.file.clone();
+fn get_schema_file(state: State<FileLoaded>) -> String {
+    return state.0.clone();
 }
 
 #[tauri::command]
-fn read_fix(state: State<Context>, input: &str, separator: &str) -> FixMsg {
-    let Some(schema) = &state.schema else {
+fn read_fix(state: State<Schema>, input: &str, separator: &str) -> FixMsg {
+    let Some(schema) = &state.0 else {
         panic!("Schema not found in context");
     };
     let fields = input
@@ -75,27 +80,37 @@ fn read_fix(state: State<Context>, input: &str, separator: &str) -> FixMsg {
     return FixMsg { fields };
 }
 
+#[tauri::command]
+async fn open_window(handle: AppHandle, state_line: State<'_, SelectedLine>, line: FixMsg) -> Result<(), Error> {
+    tauri::WindowBuilder::new(
+        &handle,
+        "details",
+        tauri::WindowUrl::App("details.html".into())
+    )
+    .title("details")
+    .build()?;
+
+    *state_line.0.lock().unwrap() = Some(line);
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
-        .setup(|app| {
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                let window = app.get_window("main").unwrap();
-                window.open_devtools();
-                window.close_devtools();
-            }
-            
+        .setup(|app| {           
             match app.load_files() {
                 Ok((file, schema)) => {
-                    app.manage(Context { file, schema: Some(schema)});
+                    app.manage(Schema(Some(schema)));
+                    app.manage(FileLoaded(file));
+                    app.manage(SelectedLine(Mutex::new(None)));
                 }
                 Err(e) => {
-                    app.manage(Context { file: e, schema: None});
+                    app.manage(ErrorMsg(e));
                 }
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_fix, get_schema_file])
+        .invoke_handler(tauri::generate_handler![read_fix, get_schema_file, open_window])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 } 

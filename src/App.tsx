@@ -22,7 +22,7 @@ const App = () => {
       console.log('schema file');
       setSchemaFile(response as string);
     });
-  });
+  }, []);
 
   const readFix = async (e: any) => {
     e.preventDefault();
@@ -37,6 +37,10 @@ const App = () => {
     e.preventDefault();
     setInput("");
     setConvertedLines([]);
+  }
+
+  const openWindow = async (line: FixMsg) => {
+    await invoke("open_window", { line });
   }
 
   return (
@@ -81,7 +85,7 @@ const App = () => {
         {
           convertedLines.map(msg => (
             <tr>
-              <td>
+              <td onClick={() => openWindow(msg)}>
                 {
                   msg.fields
                     .map(field => field.tag + ": " + field.value).join(" | ")
