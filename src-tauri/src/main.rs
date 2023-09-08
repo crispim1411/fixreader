@@ -39,11 +39,9 @@ struct Context {
     file: String,
     schema: Option<FixSchema>,
 }
-
 struct Schema(Option<FixSchema>);
 struct FileLoaded(String);
 struct ErrorMsg(String);
-struct SelectedLine(Mutex<Option<FixMsg>>);
 
 #[derive(Serialize, Deserialize)]
 struct FixMsg {
@@ -80,21 +78,6 @@ fn read_fix(state: State<Schema>, input: &str, separator: &str) -> FixMsg {
     return FixMsg { fields };
 }
 
-#[tauri::command]
-async fn open_window(handle: AppHandle, state_line: State<'_, SelectedLine>, line: FixMsg) -> Result<(), Error> {
-    tauri::WindowBuilder::new(
-        &handle,
-        "details",
-        tauri::WindowUrl::App("details.html".into())
-    )
-    .title("details")
-    .build()?;
-
-    *state_line.0.lock().unwrap() = Some(line);
-
-    Ok(())
-}
-
 fn main() {
     tauri::Builder::default()
         .setup(|app| {           
@@ -102,7 +85,6 @@ fn main() {
                 Ok((file, schema)) => {
                     app.manage(Schema(Some(schema)));
                     app.manage(FileLoaded(file));
-                    app.manage(SelectedLine(Mutex::new(None)));
                 }
                 Err(e) => {
                     app.manage(ErrorMsg(e));
@@ -110,7 +92,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![read_fix, get_schema_file, open_window])
+        .invoke_handler(tauri::generate_handler![read_fix, get_schema_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 } 

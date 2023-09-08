@@ -1,15 +1,8 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-
-interface FixMsg {
-  fields: Field[],
-}
-
-interface Field {
-  tag: string,
-  value: string,
-}
+import { WebviewWindow } from "@tauri-apps/api/window";
+import { emit, listen } from "@tauri-apps/api/event";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
@@ -40,12 +33,21 @@ const App = () => {
   }
 
   const openWindow = async (line: FixMsg) => {
-    await invoke("open_window", { line });
+    const webview = new WebviewWindow('details', {
+      url: 'details.html',
+    });
+
+    listen('detailsInfoRequest', () => {
+      console.log("sending", line);
+      emit('detailsInfoResponse', { line: line})
+    });
   }
 
+  // forms
   return (
     <div className="fix-reader-container">
       <h1 className="fix-reader-title">FixReader</h1>
+
       <div className="schema-section">
         <label htmlFor="schemaFile">Schema File:</label>
         <input
@@ -62,6 +64,7 @@ const App = () => {
           onChange={(e) => setSeparator(e.target.value)}
         />
       </div>
+      
       <form 
         className="input-section"
         onSubmit={readFix}>
