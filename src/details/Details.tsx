@@ -26,15 +26,9 @@ const Details = () => {
         <>
         {
             loading
-            ? "loading..."
-            : (
-            <>
-                {
-                    line?.fields
-                        .map((el) => (<li key={el.tag}> {el.tag}: {el.value} </li>))
-                }
-            </>
-            )
+                ? "loading..."
+                : line?.fields
+                    .map((el) => (<li key={el.tag}> {el.tag}: {el.value} </li>))
         }
         </>
     )

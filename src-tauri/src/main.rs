@@ -1,18 +1,18 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use fixreader::FixSchema;
+use fixreader::{FixSchema, FixConverter, FixMsg};
 use quick_xml::Reader;
 use serde::{Deserialize, Serialize};
-use tauri::{State, Manager, App, AppHandle, Error};
+use tauri::{State, Manager, App};
 use std::{fs::File, path::Path, sync::Mutex};
 
-#[derive(Deserialize, Serialize, Default)]
-struct MyConfig {
-    schema_path: String,
-}
-trait MyMethods {
-    fn load_files(&mut self) -> Result<(String, FixSchema), String>;
+struct Context(Mutex<AppState>);
+
+enum AppState {
+    Loaded { file_loaded: String },
+    Loading,
+    Unloaded { error: String }
 }
 
 impl MyMethods for App {
@@ -39,9 +39,6 @@ struct Context {
     file: String,
     schema: Option<FixSchema>,
 }
-struct Schema(Option<FixSchema>);
-struct FileLoaded(String);
-struct ErrorMsg(String);
 
 #[derive(Serialize, Deserialize)]
 struct FixMsg {
@@ -81,13 +78,15 @@ fn read_fix(state: State<Schema>, input: &str, separator: &str) -> FixMsg {
 fn main() {
     tauri::Builder::default()
         .setup(|app| {           
-            match app.load_files() {
+            match load(app) {
                 Ok((file, schema)) => {
-                    app.manage(Schema(Some(schema)));
-                    app.manage(FileLoaded(file));
+                    let app_state = AppState::Loaded { file_loaded: file };
+                    app.manage(Context(Mutex::new(app_state)));
+                    app.manage(FixConverter(schema));
                 }
                 Err(e) => {
-                    app.manage(ErrorMsg(e));
+                    let app_state = AppState::Unloaded { error: e };
+                    app.manage(Context(Mutex::new(app_state)));
                 }
             }
             Ok(())
