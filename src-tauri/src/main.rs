@@ -15,64 +15,52 @@ enum AppState {
     Unloaded { error: String }
 }
 
-impl MyMethods for App {
-    fn load_files(&mut self) -> Result<(String, FixSchema), String> {
-        let Some(config_file) = self.path_resolver().resolve_resource("config.json") else {
-            return Err("config.json not found".into());
-        };
-        let Ok(filename) =  File::open(&config_file) else {
-            return Err("Error trying read file".into());
-        };
-        let config: MyConfig = serde_json::from_reader(filename).unwrap();
-        let Ok(reader) = Reader::from_file(Path::new(&config.schema_path)) else {
-            return Err("schema not found".into());
-        };
-        let Ok(schema) = quick_xml::de::from_reader(reader.into_inner()) else {
-            return Err("Error reading schema".into());
-        };
-        return Ok((config.schema_path, schema));
+#[tauri::command]
+fn get_schema_file(state: State<Context>) -> Result<String, &'static str> {
+    let state = state.0.lock().expect("Error reading app state");
+    if let AppState::Loaded { file_loaded, .. } = &*state {
+        return Ok(file_loaded.clone());
     }
-}
-
-#[derive(Debug)]
-struct Context {
-    file: String,
-    schema: Option<FixSchema>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct FixMsg {
-    fields: Vec<Field>,
-}
-
-#[derive(Serialize, Deserialize)]
-struct Field {
-    tag: String,
-    value: String,
+    return Err("No file");
 }
 
 #[tauri::command]
-fn get_schema_file(state: State<FileLoaded>) -> String {
-    return state.0.clone();
+fn read_fix(converter: State<FixConverter>, input: &str, separator: &str) -> Result<FixMsg, &'static str> {
+    return converter.from_string(input, separator);
 }
 
-#[tauri::command]
-fn read_fix(state: State<Schema>, input: &str, separator: &str) -> FixMsg {
-    let Some(schema) = &state.0 else {
-        panic!("Schema not found in context");
+#[derive(Deserialize, Serialize, Default)]
+struct MyConfig {
+    schema_path: String,
+}
+//
+
+fn load(app: &mut App) -> Result<(String, FixSchema), String> {
+    let schema_file = load_config(app)?;
+    let schema = load_from_xml(schema_file.clone())?;
+    return Ok((schema_file, schema));
+}
+
+//// Mover para dialogo escolhendo xml se não encontrar
+fn load_config(app: &mut App) -> Result<String, String> {
+    let Some(config_file) = app.path_resolver().resolve_resource("config.json") else {
+        return Err("config.json not found".into());
     };
-    let fields = input
-        .split(separator)
-        .take_while(|&element| !element.is_empty())
-        .map(|p| {
-            match p.split_once('=') {
-                Some((tag, value)) => schema.parse(tag, value),
-                None => ("Error".to_string(), p.to_string())
-            }
-        })
-        .map(|x| Field { tag: x.0, value: x.1 })
-        .collect();
-    return FixMsg { fields };
+    let Ok(filename) =  File::open(&config_file) else {
+        return Err("Error trying read file".into());
+    };
+    let config: MyConfig = serde_json::from_reader(filename).unwrap();
+    return Ok(config.schema_path);
+}
+
+fn load_from_xml(schema_file: String) -> Result<FixSchema, String> {
+    let Ok(reader) = Reader::from_file(Path::new(&schema_file)) else {
+        return Err("schema not found".into());
+    };
+    let Ok(schema) = quick_xml::de::from_reader(reader.into_inner()) else {
+        return Err("Error reading schema".into());
+    };
+    return Ok(schema);
 }
 
 fn main() {

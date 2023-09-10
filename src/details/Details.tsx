@@ -1,11 +1,6 @@
 import { emit, listen } from "@tauri-apps/api/event";
 import { useEffect, useState } from "react";
-
-type detailsInfoEvent = {
-    payload: {
-        line: FixMsg
-    }
-}
+import "./Details.css";
 
 const Details = () => {
     const [loading, setLoading] = useState(true);

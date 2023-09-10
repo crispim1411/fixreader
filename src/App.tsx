@@ -9,21 +9,31 @@ const App = () => {
   const [separator, setSeparator] = useState("^");
   const [input, setInput] = useState("");
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
-      console.log('schema file');
       setSchemaFile(response as string);
     });
   }, []);
 
+  useEffect(() => {
+    if (error == null) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error]);
+
   const readFix = async (e: any) => {
     e.preventDefault();
     if (input.length == 0) return;
-
-    console.log('reading fix');
-    var fixMsg: FixMsg[] = await invoke("read_fix", { input, separator });
-    setConvertedLines(convertedLines.concat(fixMsg));
+    try {
+      var fixMsg: FixMsg[] = await invoke("read_fix", { input, separator });
+      setConvertedLines(convertedLines.concat(fixMsg));
+    } catch (error) {
+      setError(error as string);
+    }
   }
 
   const clear = (e: any) => {
@@ -38,8 +48,8 @@ const App = () => {
     });
 
     listen('detailsInfoRequest', () => {
-      console.log("sending", line);
-      emit('detailsInfoResponse', { line: line})
+      console.log("sending:", line);
+      emit('detailsInfoResponse', { line: line })
     });
   }
 
@@ -47,6 +57,8 @@ const App = () => {
   return (
     <div className="fix-reader-container">
       <h1 className="fix-reader-title">FixReader</h1>
+
+      <p>{error}</p>
 
       <div className="schema-section">
         <label htmlFor="schemaFile">Schema File:</label>
@@ -86,8 +98,8 @@ const App = () => {
         </thead>
         <tbody>
         {
-          convertedLines.map(msg => (
-            <tr>
+          convertedLines.map((msg, index) => (
+            <tr key={index}>
               <td onClick={() => openWindow(msg)}>
                 {
                   msg.fields
