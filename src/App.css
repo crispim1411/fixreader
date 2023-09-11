@@ -64,6 +64,18 @@
   text-align: left;
 }
 
+.error-section {
+  text-align: center;
+  padding-bottom: 25px;
+}
+
+.error-section span {
+  text-align: center;
+  padding: 10px;
+  width: 200px;
+  border: 1px solid red;
+}
+
 @media (prefers-color-scheme: dark) {
   body {
     background-color: black;

@@ -1,4 +1,5 @@
 interface FixMsg {
+    id: number,
     fields: Field[],
 }
   

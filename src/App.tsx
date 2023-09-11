@@ -10,6 +10,7 @@ const App = () => {
   const [input, setInput] = useState("");
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [counter, setCounter] = useState(0);
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -29,10 +30,13 @@ const App = () => {
     e.preventDefault();
     if (input.length == 0) return;
     try {
-      var fixMsg: FixMsg[] = await invoke("read_fix", { input, separator });
-      setConvertedLines(convertedLines.concat(fixMsg));
+      var fixMsg: FixMsg = await invoke("read_fix", { input, separator });
+      fixMsg.id = counter;
+      setConvertedLines([...convertedLines, fixMsg]);
+      setCounter(counter + 1);
+      setInput("");
     } catch (error) {
-      setError(error as string);
+      setError(`Erro: ${error}`);
     }
   }
 
@@ -42,15 +46,33 @@ const App = () => {
     setConvertedLines([]);
   }
 
-  const openWindow = async (line: FixMsg) => {
-    const webview = new WebviewWindow('details', {
+  const openWindow = async (msg: FixMsg) => {
+    const label = `details_${msg.id}`;
+    const window = WebviewWindow.getByLabel(label);
+    if (window != null) {
+      window.show();
+      return;
+    }
+
+    new WebviewWindow(label, {
       url: 'details.html',
+      width: 500,
     });
 
-    listen('detailsInfoRequest', () => {
-      console.log("sending:", line);
-      emit('detailsInfoResponse', { line: line })
+    listen('detailsInfoRequest', (req) => {
+      if (req.windowLabel != label) return;
+      emit('detailsInfoResponse', { line: msg })
     });
+  }
+
+  const removeLine = async (id: number) => {
+    let index = convertedLines.findIndex(x => x.id == id);
+    if (index == -1) return;
+
+    convertedLines.splice(index, 1);
+    console.log("Removed at ", index);
+    console.log("convertedLines: ", convertedLines);
+    setConvertedLines(convertedLines);
   }
 
   // forms
@@ -58,7 +80,9 @@ const App = () => {
     <div className="fix-reader-container">
       <h1 className="fix-reader-title">FixReader</h1>
 
-      <p>{error}</p>
+      <div className="error-section" hidden={error == null}>
+        <span>{error}</span>
+      </div>
 
       <div className="schema-section">
         <label htmlFor="schemaFile">Schema File:</label>
@@ -98,13 +122,16 @@ const App = () => {
         </thead>
         <tbody>
         {
-          convertedLines.map((msg, index) => (
-            <tr key={index}>
-              <td onClick={() => openWindow(msg)}>
+          convertedLines.map(msg => (
+            <tr >
+              <td key={msg.id} onClick={() => openWindow(msg)}>
                 {
                   msg.fields
                     .map(field => field.tag + ": " + field.value).join(" | ")
                 }
+              </td>
+              <td>
+                <button onClick={() => removeLine(msg.id)}>X</button>
               </td>
             </tr>
           ))

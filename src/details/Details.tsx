@@ -7,26 +7,36 @@ const Details = () => {
     const [line, setLine] = useState<FixMsg | null>(null);
 
     useEffect(() => {
+        console.log("starting...");
         if (loading) {
             emit('detailsInfoRequest', {});
             listen('detailsInfoResponse', (event: any) => {
-                console.log(event.payload.line);
                 setLine(event.payload.line);
                 setLoading(false);
             });
         }
     }, []); 
 
-    return (
-        <>
-        {
-            loading
-                ? "loading..."
-                : line?.fields
-                    .map((el) => (<li key={el.tag}> {el.tag}: {el.value} </li>))
-        }
-        </>
-    )
+    const details = (msg: FixMsg ) => {
+        return (
+            <table className="details-table">
+                <tbody>
+                {
+                    msg.fields.map((field, index) => 
+                        (<tr key={index}>
+                        <td> {field.tag}</td>
+                        <td>{field.value}</td>
+                        </tr>)
+                    )
+                }
+                </tbody>
+            </table>
+        )
+    }
+
+    return loading 
+        ? "loading..." 
+        : details(line!) 
 }
 
 export default Details;

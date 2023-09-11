@@ -1,6 +1,16 @@
+.details-table {
+  border-collapse: collapse;
+}
+
+.details-table th,
+.details-table td {
+  border: 1px solid #ccc;
+  padding: 5px;
+}
+
 @media (prefers-color-scheme: dark) {
-    body {
-      background-color: black;
-      color: white;
-    }
+  body {
+    background-color: black;
+    color: white;
   }
+}
