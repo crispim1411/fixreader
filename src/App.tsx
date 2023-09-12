@@ -6,7 +6,7 @@ import { emit, listen } from "@tauri-apps/api/event";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
-  const [separator, setSeparator] = useState("^");
+  const [separator, setSeparator] = useState("|");
   const [input, setInput] = useState("");
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
