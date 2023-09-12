@@ -40,8 +40,7 @@ const App = () => {
     }
   }
 
-  const clear = (e: any) => {
-    e.preventDefault();
+  const clear = () => {
     setInput("");
     setConvertedLines([]);
   }
@@ -65,14 +64,14 @@ const App = () => {
     });
   }
 
-  const removeLine = async (id: number) => {
+  const removeLine = (id: number) => {
     let index = convertedLines.findIndex(x => x.id == id);
     if (index == -1) return;
 
     convertedLines.splice(index, 1);
     console.log("Removed at ", index);
     console.log("convertedLines: ", convertedLines);
-    setConvertedLines(convertedLines);
+    setConvertedLines([...convertedLines]);
   }
 
   // forms
@@ -89,6 +88,7 @@ const App = () => {
         <input
           type="text"
           id="schemaFile"
+    
           value={schemaFile}
           disabled
         />
@@ -123,15 +123,15 @@ const App = () => {
         <tbody>
         {
           convertedLines.map(msg => (
-            <tr >
-              <td key={msg.id} onClick={() => openWindow(msg)}>
+            <tr key={msg.id}>
+              <td className="fixLine" onClick={() => openWindow(msg)}>
                 {
                   msg.fields
                     .map(field => field.tag + ": " + field.value).join(" | ")
                 }
               </td>
               <td>
-                <button onClick={() => removeLine(msg.id)}>X</button>
+                <button className="removeLine" onClick={() => removeLine(msg.id)}>X</button>
               </td>
             </tr>
           ))
