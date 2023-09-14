@@ -1,9 +1,11 @@
 interface FixMsg {
     id: number,
-    fields: Field[],
+    values: Field[],
+
 }
   
 interface Field {
     tag: string,
     value: string,
+    required: string,
 }

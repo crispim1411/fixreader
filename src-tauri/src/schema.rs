@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::fmt;
+use std::{fmt, slice::{Iter, IterMut}};
 
 #[derive(Deserialize)]
 pub struct FixSchema {
@@ -91,17 +91,35 @@ pub struct FieldValues {
 }
 
 impl FixSchema {
-    pub fn parse(&self, tag: &str, value: &str) -> (String, String) {
-        if let Some(field) = self.fields.values.iter().find(|item| item.number == tag) {
-            let value = {
-                if let Some(field) = field.values.iter().find(|item| item.value == value) {
-                    &field.description
-                } else {
-                    value
-                }
-            };
-            return (field.name.clone(), value.to_string());
+    pub fn parse_tags<'a>(&self, mut tag_values: impl Iterator<Item=(&'a str, &'a str)>) -> Result<Vec<(String, String, String)>, &'static str> {
+        let msgtype_field = tag_values.find(|x| x.0 == "35").expect("Mensagem fix inválida");
+        let msg_schema = self.find_msg_schema(msgtype_field.1).expect("Tipo de mensagem não suportado");
+
+        let mut values = Vec::new();
+        for (tag, value) in tag_values {
+            if let Some(field) = self.fields.values.iter().find(|item| &item.number == tag) {
+                let value: &str = {
+                    if let Some(field) = field.values.iter().find(|item| &item.value == value) {
+                        &field.description
+                    } else { value }
+                };
+                let required = 
+                    match msg_schema.fields.iter().find(|x| x.name == field.name) {
+                        Some(schema_field) => schema_field.required.clone(),
+                        None => String::new()
+                    };
+                
+                values.push((field.name.to_string(), value.to_string(), required));
+            } else { 
+                values.push((tag.to_string(), value.to_string(), String::new()));
+            }
         }
-        (tag.to_string(), value.to_string())
+        return Ok(values);
+    }
+
+    pub fn find_msg_schema(&self, msgtype: &str) -> Option<&Message> {
+        self.messages.values
+            .iter()
+            .find(|&item| item.msgtype == msgtype)
     }
 }

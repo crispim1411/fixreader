@@ -70,7 +70,7 @@ fn main() {
                 Ok((file, schema)) => {
                     let app_state = AppState::Loaded { file_loaded: file };
                     app.manage(Context(Mutex::new(app_state)));
-                    app.manage(FixConverter(schema));
+                    app.manage(FixConverter { schema });
                 }
                 Err(e) => {
                     let app_state = AppState::Unloaded { error: e };

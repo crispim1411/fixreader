@@ -126,7 +126,7 @@ const App = () => {
             <tr key={msg.id}>
               <td className="fixLine" onClick={() => openWindow(msg)}>
                 {
-                  msg.fields
+                  msg.values
                     .map(field => field.tag + ": " + field.value).join(" | ")
                 }
               </td>

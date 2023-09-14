@@ -22,10 +22,11 @@ const Details = () => {
             <table className="details-table">
                 <tbody>
                 {
-                    msg.fields.map((field, index) => 
+                    msg.values.map((field, index) => 
                         (<tr key={index}>
                         <td> {field.tag}</td>
                         <td>{field.value}</td>
+                        <td>{field.required}</td>
                         </tr>)
                     )
                 }
