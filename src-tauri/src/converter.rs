@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-use crate::FixSchema;
+use crate::{FixSchema, AppResult};
 
 #[derive(Serialize, Deserialize)]
 pub struct FixMsg {
@@ -26,23 +26,19 @@ pub struct FieldSchema {
     required: String,
 }
 
-pub struct FixConverter {
-    pub schema: FixSchema
-}
-
-impl FixConverter {
-    pub fn from_string(&self, input: &str, separator: &str) -> Result<FixMsg, &'static str> {
+impl FixSchema {
+    pub fn from_string(&self, input: &str, separator: &str) -> AppResult<FixMsg> {
 
         if input.matches(separator).count() > 0  {
-            let mut tag_values = input.split(separator)
+            let tag_values = input.split(separator)
                 .take_while(|&element| !element.is_empty())
                 .map(|x| {
-                    match x.split_once('=') {
-                        Some((tag, value)) => (tag, value),
-                        None => ("Error", x)
-                    }
+                    let Some(splitted) =  x.split_once('=') else {
+                        return ("Error splitting ", x);
+                    };
+                    splitted
                 }).into_iter();
-            let values = self.schema.parse_tags(tag_values).expect("Erro parseando tags");
+            let values = self.parse_tags(tag_values).expect("Erro parseando tags");
             let values = values
                 .into_iter()
                 .map(|(tag, value, required)| Field { tag, value, required})
@@ -50,9 +46,7 @@ impl FixConverter {
 
             return Ok(FixMsg { values });
         }
-        return Err("Separador inválido");
-    }
-
-    
+        return Err("Separador inválido".into());
+    }    
 }
 

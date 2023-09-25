@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use std::{fmt, slice::{Iter, IterMut}};
 
 #[derive(Deserialize)]
 pub struct FixSchema {

@@ -16,6 +16,9 @@
       "window": {
         "all": true
       },
+      "dialog": {
+        "open": true
+      },
       "shell": {
         "all": false,
         "open": true

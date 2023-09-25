@@ -6,15 +6,15 @@ Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo 
 - [x] pesquisar por campos agrupados 
 - [x] ler mensagem via terminal
 - [x] ajustar o print
-- [ ] validar campos obrigatórios
+- [x] validar campos obrigatórios
 - [x] CLI
 - [x] separar schema para um arquivo
-- [ ] criar um arquivo FixMessage a partir de FixSchema
 - [x] GUI - Tauri
 - [x] Schema ser movido pro context
 - [x] Preencher na tela o xml carregado
 - [x] Carregar xml via config.json
-- [ ] Dialogo pra carregar outro xml
-- [ ] Incluir busca de tags
+- [x] Dialogo pra carregar outro xml
 - [x] Setar separador na tela
-- [ ] Abrir detalhes da linha
+- [x] Abrir detalhes da linha
+- [ ] validar header e trailer
+- [ ] Ajustar abrir xml

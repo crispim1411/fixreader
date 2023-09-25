@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import { WebviewWindow } from "@tauri-apps/api/window";
 import { emit, listen } from "@tauri-apps/api/event";
+import { open } from "@tauri-apps/api/dialog";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
@@ -15,6 +16,8 @@ const App = () => {
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
       setSchemaFile(response as string);
+    }).catch((_) => {
+      setSchemaFile('not loaded');
     });
   }, []);
 
@@ -31,12 +34,13 @@ const App = () => {
     if (input.length == 0) return;
     try {
       var fixMsg: FixMsg = await invoke("read_fix", { input, separator });
+      console.log(fixMsg);
       fixMsg.id = counter;
       setConvertedLines([...convertedLines, fixMsg]);
       setCounter(counter + 1);
       setInput("");
     } catch (error) {
-      setError(`Erro: ${error}`);
+      setError(`Error: ${error}`);
     }
   }
 
@@ -74,6 +78,20 @@ const App = () => {
     setConvertedLines([...convertedLines]);
   }
 
+  const selectFileClick = async () => {
+    const selected = await open({
+      filters: [{
+        name: 'Schema Fix',
+        extensions: ['xml']
+      }]
+    })
+    console.log("Selected: ", selected);
+    if (selected !== null && typeof selected === 'string') {
+      const items = selected.split('\\')
+      setSchemaFile(items.pop() as string);
+    }
+  }
+
   // forms
   return (
     <div className="fix-reader-container">
@@ -85,13 +103,8 @@ const App = () => {
 
       <div className="schema-section">
         <label htmlFor="schemaFile">Schema File:</label>
-        <input
-          type="text"
-          id="schemaFile"
-    
-          value={schemaFile}
-          disabled
-        />
+        <button onClick={selectFileClick}>{schemaFile}</button>
+
         <label htmlFor="separator">Separator:</label>
         <input
           type="text"
@@ -101,7 +114,7 @@ const App = () => {
         />
       </div>
       
-      <form 
+      <form
         className="input-section"
         onSubmit={readFix}>
         <label htmlFor="message">Message:</label>
