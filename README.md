@@ -1,12 +1,9 @@
 # Leitor Fix em Rust
 Tela simples utilizando Tauri como tela para decodificar mensagens do protocolo fix.
 
-<p float="left">
-<img src="images/img1.png" alt="drawing" style="float: left; width: 45%; padding-left: 15px"/>
-<img src="images/img2.png" alt="drawing" style="float: right; width: 45%; padding-right: 15px"/>
-</p>
+<img src="images/img1.png" alt="drawing" style="float: left; width: 50%; padding-left: 15px"/>
 
-<br clear="left"/>
+<img src="images/img2.png" alt="drawing" style="float: right; width: 50%; padding-right: 15px"/>
 
 ### A fazer
 - [x] testar com outros xml
