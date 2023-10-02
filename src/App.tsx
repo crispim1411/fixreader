@@ -73,8 +73,6 @@ const App = () => {
     if (index == -1) return;
 
     convertedLines.splice(index, 1);
-    console.log("Removed at ", index);
-    console.log("convertedLines: ", convertedLines);
     setConvertedLines([...convertedLines]);
   }
 
@@ -87,8 +85,13 @@ const App = () => {
     })
     console.log("Selected: ", selected);
     if (selected !== null && typeof selected === 'string') {
-      const items = selected.split('\\')
-      setSchemaFile(items.pop() as string);
+      try {
+        await invoke("set_schema_file", { path: selected });
+        const filename = selected.split('\\').pop() as string;
+        setSchemaFile(filename);
+      } catch (error) {
+        setError(`Error: ${error}`);
+      }
     }
   }
 
@@ -101,19 +104,23 @@ const App = () => {
         <span>{error}</span>
       </div>
 
-      <div className="schema-section">
-        <label htmlFor="schemaFile">Schema File:</label>
-        <button onClick={selectFileClick}>{schemaFile}</button>
-
+      <div>
         <label htmlFor="separator">Separator:</label>
         <input
           type="text"
-          id="separator"
+          className="separator-input"
+          maxLength={3}
           value={separator}
           onChange={(e) => setSeparator(e.target.value)}
         />
       </div>
+
+      <div>
+        <label htmlFor="schemaFile">Schema:</label>
+        <button onClick={selectFileClick}>{schemaFile}</button>
       
+        </div>
+
       <form
         className="input-section"
         onSubmit={readFix}>

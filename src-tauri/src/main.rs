@@ -1,11 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use fixreader::{FixSchema, FixMsg, AppResult, Result};
+use fixreader::{FixSchema, FixMsg, AppResult, Result, Cache};
 use quick_xml::Reader;
-use serde::{Deserialize, Serialize};
-use tauri::{State, Manager, App, AppHandle};
-use std::{fs::File, path::Path, sync::Mutex};
+use tauri::{State, App, Manager};
+use std::{sync::Mutex, path::Path};
 
 struct Context(Mutex<AppState>);
 
@@ -29,10 +28,11 @@ fn get_schema_file(state: State<Context>) -> AppResult<String> {
 #[tauri::command]
 fn set_schema_file(context: State<Context>, path: &str)  -> AppResult<()> {
     let mut state = context.0.lock().unwrap();
-    let Ok(schema) = load_from_xml(path) else {
-        return Err("Error reading schema file")?;
-    };
+    let schema = load_from_xml(path).map_err(|e| e.to_string())?;
+
     *state = AppState::Loaded { file_loaded: path.into(), schema };
+    Cache::save(path).map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
@@ -40,30 +40,15 @@ fn set_schema_file(context: State<Context>, path: &str)  -> AppResult<()> {
 fn read_fix(context: State<Context>, input: &str, separator: &str) -> AppResult<FixMsg> {
     let state =  context.0.lock().unwrap();
     let AppState::Loaded { schema, .. } = &*state else {
-        return Err("Error reading app state");
+        return Err("Error reading app state".into());
     };
     schema.from_string(input, separator)
 }
 
-#[derive(Deserialize, Serialize, Default)]
- struct MyConfig {
-    schema_path: String,
-}
-//
-
 fn load(app: &mut App) -> Result<(String, FixSchema)> {
-    let schema_file = load_config(app)?;
+    let schema_file = Cache::load()?;
     let schema = load_from_xml(&schema_file)?;
     Ok((schema_file, schema))
-}
-
-fn load_config(app: &mut App) -> Result<String> {
-    let Some(file_buffer) = app.path_resolver().resolve_resource("config.json") else {
-        return Err("No config file found")?;
-    };
-    let filename =  File::open(&file_buffer)?;
-    let config: MyConfig = serde_json::from_reader(filename)?;
-    Ok(config.schema_path)
 }
 
 fn load_from_xml(schema_file: &str) -> Result<FixSchema> {
