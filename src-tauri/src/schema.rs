@@ -39,7 +39,7 @@ pub struct Fields {
     pub values: Vec<Field>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct FieldHeader {
     #[serde(rename = "@name")]
     pub name: String,
@@ -91,34 +91,56 @@ pub struct FieldValues {
 
 impl FixSchema {
     pub fn parse_tags<'a>(&self, mut tag_values: impl Iterator<Item=(&'a str, &'a str)>) -> Result<Vec<(String, String, String)>, &'static str> {
-        let msgtype_field = tag_values.find(|x| x.0 == "35").expect("Mensagem fix inválida");
-        let msg_schema = self.find_msg_schema(msgtype_field.1).expect("Tipo de mensagem não suportado");
+        let msgtype_value = tag_values.find(|x| x.0 == "35").expect("Mensagem fix inválida").1;
+        let msg_schema = self.find_msgtype(msgtype_value).expect("Tipo de mensagem não suportado");
 
         let mut values = Vec::new();
         for (tag, value) in tag_values {
-            if let Some(field) = self.fields.values.iter().find(|item| &item.number == tag) {
-                let value: &str = {
-                    if let Some(field) = field.values.iter().find(|item| &item.value == value) {
-                        &field.description
-                    } else { value }
-                };
-                let required = 
-                    match msg_schema.fields.iter().find(|x| x.name == field.name) {
-                        Some(schema_field) => schema_field.required.clone(),
-                        None => String::new()
-                    };
-                
-                values.push((field.name.to_string(), value.to_string(), required));
-            } else { 
+            let Some(field) = self.find_field_by_tag(tag) else { 
                 values.push((tag.to_string(), value.to_string(), String::new()));
-            }
+                continue;
+            };
+            let description: &str = {
+                if let Some(field) = field.values.iter().find(|item| &item.value == value) {
+                    &field.description
+                } else { value }
+            };
+            let required = 
+                if let Some(body_field) = msg_schema.fields.iter().find(|x| x.name == field.name) {
+                    body_field.required.clone()
+                } else if let Some(header_field) = self.header.values.iter().find(|x| x.name == field.name) {
+                    header_field.required.clone()
+                } else if let Some(trailer_field) = self.trailer.values.iter().find(|x| x.name == field.name) {
+                    trailer_field.required.clone()
+                } else {
+                    String::new()
+                };
+            
+            values.push((field.name.to_string(), description.to_string(), required));
+            
         }
         return Ok(values);
     }
 
-    pub fn find_msg_schema(&self, msgtype: &str) -> Option<&Message> {
-        self.messages.values
+    fn find_msgtype(&self, msgtype: &str) -> Option<Message> {
+        if let Some(msg) = self.messages.values
             .iter()
-            .find(|&item| item.msgtype == msgtype)
+            .find(|&item| item.msgtype == msgtype) {
+                let fields = msg.fields.clone();
+                let grouped: Vec<FieldHeader> = fields.iter().flat_map(|i| i.group.clone()).collect();
+                return Some(Message {
+                    name: msg.name.clone(),
+                    msgtype: msg.msgtype.clone(),
+                    msgcat: msg.msgcat.clone(),
+                    fields: [fields, grouped].concat(),
+                });
+        }
+        None
+    }
+
+    fn find_field_by_tag(&self, tag: &str) -> Option<&Field> {
+        self.fields.values
+            .iter()
+            .find(|item| &item.number == tag)
     }
 }
