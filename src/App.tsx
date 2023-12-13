@@ -12,6 +12,7 @@ const App = () => {
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
+  const [detailWindow, setDetailWindow] = useState<WebviewWindow | null>(null);
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -36,8 +37,8 @@ const App = () => {
       var fixMsg: FixMsg = await invoke("read_fix", { input, separator });
       console.log(fixMsg);
       fixMsg.id = counter;
-      setConvertedLines([...convertedLines, fixMsg]);
       setCounter(counter + 1);
+      setConvertedLines([...convertedLines, fixMsg]);
       setInput("");
     } catch (error) {
       setError(`Error: ${error}`);
@@ -51,16 +52,13 @@ const App = () => {
 
   const openWindow = async (msg: FixMsg) => {
     const label = `details_${msg.id}`;
-    const window = WebviewWindow.getByLabel(label);
-    if (window != null) {
-      window.show();
-      return;
-    }
 
-    new WebviewWindow(label, {
-      url: 'details.html',
-      width: 500,
-    });
+    detailWindow?.close();
+    setDetailWindow(new WebviewWindow(label, {
+        url: 'details.html',
+        width: 500,
+      })
+    );
 
     listen('detailsInfoRequest', (req) => {
       if (req.windowLabel != label) return;

@@ -8,6 +8,7 @@ const Details = () => {
 
     useEffect(() => {
         console.log("starting...");
+        
         if (loading) {
             emit('detailsInfoRequest', {});
             listen('detailsInfoResponse', (event: any) => {
