@@ -687,6 +687,7 @@ dependencies = [
 name = "fixreader"
 version = "0.0.0"
 dependencies = [
+ "lazy_static",
  "quick-xml 0.30.0",
  "serde",
  "serde_json",
