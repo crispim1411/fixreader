@@ -4,6 +4,7 @@ import "./App.css";
 import { WebviewWindow } from "@tauri-apps/api/window";
 import { emit, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/api/dialog";
+import Details from "./Details";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
@@ -13,6 +14,7 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
   const [detailWindow, setDetailWindow] = useState<WebviewWindow | null>(null);
+  const [hide, setHide] = useState<Map<number, boolean>>(new Map());
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -40,6 +42,7 @@ const App = () => {
       setCounter(counter + 1);
       setConvertedLines([...convertedLines, fixMsg]);
       setInput("");
+      setHide(map => new Map(map.set(fixMsg.id, false)))
     } catch (error) {
       setError(`Error: ${error}`);
     }
@@ -140,8 +143,9 @@ const App = () => {
         <tbody>
         {
           convertedLines.map(msg => (
-            <tr key={msg.id}>
-              <td className="fixLine" onClick={() => openWindow(msg)}>
+            <><tr key={msg.id}>
+              <td className="fixLine" 
+                onClick={(_) => setHide(map => new Map(map.set(msg.id, !map.get(msg.id))))}>
                 {
                   msg.values
                     .map(field => field.tag + ": " + field.value).join(" | ")
@@ -151,6 +155,9 @@ const App = () => {
                 <button className="removeLine" onClick={() => removeLine(msg.id)}>X</button>
               </td>
             </tr>
+            <div className="collapsible" onClick={(_) => setHide(map => new Map(map.set(msg.id, !map.get(msg.id))))} style={{"height": hide.get(msg.id) ? "auto" : 0, "overflow": "clip"}}>
+                <Details line={msg}/>
+            </div></>
           ))
         }
         </tbody>
