@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 pub type AppResult<T> = std::result::Result<T, String>;
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
-const CACHE_PATH: &'static str = "cache.txt";
+const CACHE_FILENAME: &'static str = "cache.txt";
 
 lazy_static! {
     static ref FOLDER_PATH: String = {
@@ -22,14 +22,17 @@ pub struct Cache;
 
 impl Cache {
    pub  fn save(data: &str) -> Result<()>  {
-        fs::create_dir_all(&*FOLDER_PATH).expect("Error creating cache folder on appdata");
-        fs::write(CACHE_PATH, data)?;  
+        let folder_path = &*FOLDER_PATH;
+        fs::create_dir_all(&folder_path).expect("Error creating cache folder on appdata");
+        let cache_path = format!("{folder_path}/{CACHE_FILENAME}");
+        fs::write(cache_path, data)?;  
         Ok(())
     }
 
     pub fn load() -> Result<String> {
-        let filepath = format!("{}/{}", *FOLDER_PATH, CACHE_PATH);
-        let data = fs::read_to_string(filepath)?;
+        let folder_path = &*FOLDER_PATH;
+        let cache_path = format!("{folder_path}/{CACHE_FILENAME}");
+        let data = fs::read_to_string(cache_path)?;
         Ok(data)
     }
 }

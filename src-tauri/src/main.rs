@@ -28,7 +28,7 @@ fn get_schema_file(state: State<Context>) -> AppResult<String> {
 #[tauri::command]
 fn set_schema_file(context: State<Context>, path: &str)  -> AppResult<()> {
     let mut state = context.0.lock().unwrap();
-    let schema = load_from_xml(path).map_err(|e| e.to_string())?;
+    let schema = read_from_xml(path).map_err(|e| e.to_string())?;
 
     *state = AppState::Loaded { file_loaded: path.into(), schema };
     Cache::save(path).map_err(|e| e.to_string())?;
@@ -45,13 +45,13 @@ fn read_fix(context: State<Context>, input: &str, separator: &str) -> AppResult<
     schema.from_string(input, separator)
 }
 
-fn load(app: &mut App) -> Result<(String, FixSchema)> {
+fn load() -> Result<(String, FixSchema)> {
     let schema_file = Cache::load()?;
-    let schema = load_from_xml(&schema_file)?;
+    let schema = read_from_xml(&schema_file)?;
     Ok((schema_file, schema))
 }
 
-fn load_from_xml(schema_file: &str) -> Result<FixSchema> {
+fn read_from_xml(schema_file: &str) -> Result<FixSchema> {
     let reader = Reader::from_file(Path::new(schema_file))?;
     let schema = quick_xml::de::from_reader(reader.into_inner())?;
     Ok(schema)
@@ -60,7 +60,7 @@ fn load_from_xml(schema_file: &str) -> Result<FixSchema> {
 fn main() {
     tauri::Builder::default()
         .setup(|app| {           
-            match load(app) {
+            match load() {
                 Ok((file, schema)) => {
                     let app_state = AppState::Loaded { file_loaded: file, schema };
                     app.manage(Context(Mutex::new(app_state)));

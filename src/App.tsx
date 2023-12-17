@@ -85,8 +85,7 @@ const App = () => {
     if (selected !== null && typeof selected === 'string') {
       try {
         await invoke("set_schema_file", { path: selected });
-        const filename = selected.split('\\').pop() as string;
-        setSchemaFile(filename);
+        setSchemaFile(selected);
       } catch (error) {
         setError(`Error: ${error}`);
       }

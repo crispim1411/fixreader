@@ -89,8 +89,13 @@ pub struct FieldValues {
     pub description: String,
 }
 
+type ParsedTag = Vec<(String, String, String)>;
+
 impl FixSchema {
-    pub fn parse_tags<'a>(&self, mut tag_values: impl Iterator<Item=(&'a str, &'a str)>) -> Result<Vec<(String, String, String)>, &'static str> {
+    pub fn parse_tags<'a, I>(&self, mut tag_values: I) -> Result<ParsedTag, &'static str> 
+    where 
+        I: Iterator<Item=(&'a str, &'a str)> 
+    {
         let msgtype_value = tag_values.find(|x| x.0 == "35").expect("Mensagem fix inválida").1;
         let msg_schema = self.find_msgtype(msgtype_value).expect("Tipo de mensagem não suportado");
 
