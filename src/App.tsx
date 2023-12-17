@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 import { WebviewWindow } from "@tauri-apps/api/window";
-import { emit, listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/api/dialog";
-import Details from "./Details";
+import Details from "./details/Details";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
@@ -13,8 +12,7 @@ const App = () => {
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
-  const [detailWindow, setDetailWindow] = useState<WebviewWindow | null>(null);
-  const [hide, setHide] = useState<Map<number, boolean>>(new Map());
+  const [hideMap, setHideMap] = useState<Map<number, boolean>>(new Map());
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -37,12 +35,11 @@ const App = () => {
     if (input.length == 0) return;
     try {
       var fixMsg: FixMsg = await invoke("read_fix", { input, separator });
-      console.log(fixMsg);
       fixMsg.id = counter;
       setCounter(counter + 1);
       setConvertedLines([...convertedLines, fixMsg]);
       setInput("");
-      setHide(map => new Map(map.set(fixMsg.id, false)))
+      setHideMap(map => new Map(map.set(fixMsg.id, false)))
     } catch (error) {
       setError(`Error: ${error}`);
     }
@@ -51,22 +48,6 @@ const App = () => {
   const clear = () => {
     setInput("");
     setConvertedLines([]);
-  }
-
-  const openWindow = async (msg: FixMsg) => {
-    const label = `details_${msg.id}`;
-
-    detailWindow?.close();
-    setDetailWindow(new WebviewWindow(label, {
-        url: 'details.html',
-        width: 500,
-      })
-    );
-
-    listen('detailsInfoRequest', (req) => {
-      if (req.windowLabel != label) return;
-      emit('detailsInfoResponse', { line: msg })
-    });
   }
 
   const removeLine = (id: number) => {
@@ -84,7 +65,6 @@ const App = () => {
         extensions: ['xml']
       }]
     })
-    console.log("Selected: ", selected);
     if (selected !== null && typeof selected === 'string') {
       try {
         await invoke("set_schema_file", { path: selected });
@@ -145,7 +125,7 @@ const App = () => {
           convertedLines.map(msg => (
             <><tr key={msg.id}>
               <td className="fixLine" 
-                onClick={(_) => setHide(map => new Map(map.set(msg.id, !map.get(msg.id))))}>
+                onClick={(_) => setHideMap(map => new Map(map.set(msg.id, !map.get(msg.id))))}>
                 {
                   msg.values
                     .map(field => field.tag + ": " + field.value).join(" | ")
@@ -155,7 +135,7 @@ const App = () => {
                 <button className="removeLine" onClick={() => removeLine(msg.id)}>X</button>
               </td>
             </tr>
-            <div className="collapsible" onClick={(_) => setHide(map => new Map(map.set(msg.id, !map.get(msg.id))))} style={{"height": hide.get(msg.id) ? "auto" : 0, "overflow": "clip"}}>
+            <div className="collapsible" onClick={(_) => setHideMap(map => new Map(map.set(msg.id, !map.get(msg.id))))} style={{"height": hideMap.get(msg.id) ? "auto" : 0, "overflow": "clip"}}>
                 <Details line={msg}/>
             </div></>
           ))

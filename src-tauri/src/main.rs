@@ -3,7 +3,7 @@
 
 use fixreader::{FixSchema, FixMsg, AppResult, Result, Cache};
 use quick_xml::Reader;
-use tauri::{State, App, Manager};
+use tauri::{State, Manager};
 use std::{sync::Mutex, path::Path};
 
 struct Context(Mutex<AppState>);

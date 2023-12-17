@@ -1,23 +1,10 @@
-import { emit, listen } from "@tauri-apps/api/event";
-import { useEffect, useState } from "react";
 import "./Details.css";
 
-const Details = () => {
-    const [loading, setLoading] = useState(true);
-    const [line, setLine] = useState<FixMsg | null>(null);
+type DetailsProps = {
+    line: FixMsg
+}
 
-    useEffect(() => {
-        console.log("starting...");
-        
-        if (loading) {
-            emit('detailsInfoRequest', {});
-            listen('detailsInfoResponse', (event: any) => {
-                setLine(event.payload.line);
-                setLoading(false);
-            });
-        }
-    }, []); 
-
+const Details = ({ line } : DetailsProps) => {
     const details = (msg: FixMsg ) => {
         return (
             <table className="details-table">
@@ -35,9 +22,7 @@ const Details = () => {
         )
     }
 
-    return loading 
-        ? "loading..." 
-        : details(line!) 
+    return details(line!) 
 }
 
 export default Details;
