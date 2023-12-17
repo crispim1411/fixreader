@@ -25,9 +25,8 @@ const Details = () => {
                 {
                     msg.values.map((field, index) => 
                         (<tr key={index}>
-                        <td> {field.tag}</td>
-                        <td>{field.value}</td>
-                        <td>{field.required}</td>
+                            <td> {field.tag}</td>
+                            <td>{field.value}</td>
                         </tr>)
                     )
                 }

@@ -18,7 +18,9 @@ enum AppState {
 
 #[tauri::command]
 fn get_schema_file(state: State<Context>) -> AppResult<String> {
-    let state = state.0.lock().expect("Error reading app state");
+    let Ok(state) = state.0.lock() else {
+        return Err("Error reading app state".into());
+    };
     if let AppState::Loaded { file_loaded, .. } = &*state {
         return Ok(file_loaded.clone());
     }

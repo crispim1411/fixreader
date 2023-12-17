@@ -11,7 +11,6 @@ pub struct FixMsg {
 pub struct Field {
     tag: String,
     value: String,
-    required: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,10 +37,10 @@ impl FixSchema {
                     };
                     splitted
                 }).into_iter();
-            let values = self.parse_tags(tag_values).expect("Erro parseando tags");
+            let values = self.parse_tags(tag_values)?;
             let values = values
                 .into_iter()
-                .map(|(tag, value, required)| Field { tag, value, required})
+                .map(|(tag, value)| Field { tag, value})
                 .collect();
 
             return Ok(FixMsg { values });

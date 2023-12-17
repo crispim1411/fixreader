@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -89,20 +90,20 @@ pub struct FieldValues {
     pub description: String,
 }
 
-type ParsedTag = Vec<(String, String, String)>;
+type ParsedTag = Vec<(String, String)>;
 
 impl FixSchema {
-    pub fn parse_tags<'a, I>(&self, mut tag_values: I) -> Result<ParsedTag, &'static str> 
+    pub fn parse_tags<'a, I>(&self, tag_values: I) -> Result<ParsedTag, String> 
     where 
         I: Iterator<Item=(&'a str, &'a str)> 
     {
-        let msgtype_value = tag_values.find(|x| x.0 == "35").expect("Mensagem fix inválida").1;
-        let msg_schema = self.find_msgtype(msgtype_value).expect("Tipo de mensagem não suportado");
-
         let mut values = Vec::new();
+        let mut msgtype = "";
+
         for (tag, value) in tag_values {
+            if tag == "35" { msgtype = value; }
             let Some(field) = self.find_field_by_tag(tag) else { 
-                values.push((tag.to_string(), value.to_string(), String::new()));
+                values.push((tag.into(), value.into()));
                 continue;
             };
             let description: &str = {
@@ -110,20 +111,13 @@ impl FixSchema {
                     &field.description
                 } else { value }
             };
-            let required = 
-                if let Some(body_field) = msg_schema.fields.iter().find(|x| x.name == field.name) {
-                    body_field.required.clone()
-                } else if let Some(header_field) = self.header.values.iter().find(|x| x.name == field.name) {
-                    header_field.required.clone()
-                } else if let Some(trailer_field) = self.trailer.values.iter().find(|x| x.name == field.name) {
-                    trailer_field.required.clone()
-                } else {
-                    String::new()
-                };
             
-            values.push((field.name.to_string(), description.to_string(), required));
-            
+            values.push((field.name.to_string(), description.to_string()));
         }
+        let Some(msg_schema) = self.find_msgtype(msgtype) else {
+            return Err("Tipo de mensagem não suportado".into());
+        };
+        self.validate(&values, &msg_schema)?;
         return Ok(values);
     }
 
@@ -147,5 +141,35 @@ impl FixSchema {
         self.fields.values
             .iter()
             .find(|item| &item.number == tag)
+    }
+
+    fn validate(&self, values: &Vec<(String, String)>, msg: &Message) -> Result<(), String> {
+        let required_headers: Vec<&str> = self.header.values.iter().filter(|x| x.required == "Y")
+            .map(|f| f.name.as_ref()).collect();
+        let required_trailers: Vec<&str> = self.header.values.iter().filter(|x| x.required == "Y")
+            .map(|f| f.name.as_ref()).collect();
+        let required_fields: Vec<&str> = msg.fields.iter().filter(|x| x.required == "Y")
+            .map(|f| f.name.as_ref()).collect();
+
+        let mut missing_fields = HashSet::new();
+        for required_header in required_headers {
+            if values.iter().find(|v| v.0 == required_header).is_none() { 
+                missing_fields.insert(required_header);
+            }
+        }
+        for required_trailer in required_trailers {
+            if values.iter().find(|v| v.0 == required_trailer).is_none() {
+                missing_fields.insert(required_trailer);
+            }
+        }
+        for required_field in required_fields {
+            if values.iter().find(|v| v.0 == required_field).is_none() {
+                missing_fields.insert(required_field);
+            }
+        } 
+        if missing_fields.len() != 0 {
+            return Err(format!("Missing fields {missing_fields:?}"));
+        }
+        Ok(())
     }
 }
