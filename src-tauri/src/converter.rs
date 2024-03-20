@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
+use tauri::App;
 
-use crate::{FixSchema, AppResult};
+use crate::{FixSchema, AppError};
 
 #[derive(Serialize, Deserialize)]
 pub struct FixMsg {
@@ -26,7 +27,7 @@ pub struct FieldSchema {
 }
 
 impl FixSchema {
-    pub fn from_string(&self, input: &str, separator: &str) -> AppResult<FixMsg> {
+    pub fn from_string(&self, input: &str, separator: &str) -> Result<FixMsg, AppError> {
 
         if input.matches(separator).count() > 0  {
             let tag_values = input.split(separator)
