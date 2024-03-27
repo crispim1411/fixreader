@@ -1,7 +1,6 @@
 use serde::{Serialize, Deserialize};
-use tauri::App;
 
-use crate::{FixSchema, AppError};
+use crate::{AppError, FixSchema};
 
 #[derive(Serialize, Deserialize)]
 pub struct FixMsg {

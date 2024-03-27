@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use serde::Deserialize;
 
+use crate::AppError;
+
 #[derive(Deserialize)]
 pub struct FixSchema {
     pub header: Header,
@@ -93,7 +95,7 @@ pub struct FieldValues {
 type ParsedTag = Vec<(String, String)>;
 
 impl FixSchema {
-    pub fn parse_tags<'a, I>(&self, tag_values: I) -> Result<ParsedTag, String> 
+    pub fn parse_tags<'a, I>(&self, tag_values: I) -> Result<ParsedTag, AppError> 
     where 
         I: Iterator<Item=(&'a str, &'a str)> 
     {
@@ -143,7 +145,7 @@ impl FixSchema {
             .find(|item| &item.number == tag)
     }
 
-    fn validate(&self, values: &Vec<(String, String)>, msg: &Message) -> Result<(), String> {
+    fn validate(&self, values: &Vec<(String, String)>, msg: &Message) -> Result<(), AppError> {
         let required_headers: Vec<&str> = self.header.values.iter().filter(|x| x.required == "Y")
             .map(|f| f.name.as_ref()).collect();
         let required_trailers: Vec<&str> = self.header.values.iter().filter(|x| x.required == "Y")
@@ -168,7 +170,7 @@ impl FixSchema {
             }
         } 
         if missing_fields.len() != 0 {
-            return Err(format!("Missing fields {missing_fields:?}"));
+            return Err(format!("Missing fields {missing_fields:?}").into());
         }
         Ok(())
     }
