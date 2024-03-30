@@ -685,7 +685,7 @@ dependencies = [
 
 [[package]]
 name = "fixreader"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "lazy_static",
  "quick-xml 0.30.0",

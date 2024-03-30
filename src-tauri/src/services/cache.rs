@@ -1,7 +1,7 @@
 use std::fs;
 use lazy_static::lazy_static;
 
-use crate::AppError;
+use crate::models::AppError;
 
 const CACHE_FILENAME: &'static str = "cache.txt";
 
