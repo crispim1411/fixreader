@@ -6,7 +6,6 @@ import Details from "./details/Details";
 
 const App = () => {
   const [schemaFile, setSchemaFile] = useState("");
-  const [separator, setSeparator] = useState("|");
   const [input, setInput] = useState("");
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +32,7 @@ const App = () => {
     e.preventDefault();
     if (input.length == 0) return;
     try {
-      var fixMsg: FixMsg = await invoke("read_fix", { input, separator });
+      var fixMsg: FixMsg = await invoke("read_fix", { input });
       fixMsg.id = counter;
       setCounter(counter + 1);
       setConvertedLines([...convertedLines, fixMsg]);
@@ -78,28 +77,13 @@ const App = () => {
   return (
     <div className="fix-reader-container">
       <h1 className="fix-reader-title">FixReader</h1>
-
       <div className="error-section" hidden={error == null}>
         <span>{error}</span>
       </div>
-
-      <div>
-        <label htmlFor="separator">Separator:</label>
-        <input
-          type="text"
-          className="separator-input"
-          maxLength={3}
-          value={separator}
-          onChange={(e) => setSeparator(e.target.value)}
-        />
-      </div>
-
       <div>
         <label htmlFor="schemaFile">Schema:</label>
         <button onClick={selectFileClick}>{schemaFile}</button>
-      
-        </div>
-
+      </div>
       <form
         className="input-section"
         onSubmit={readFix}>

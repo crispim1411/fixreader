@@ -37,7 +37,7 @@ fn set_schema_file(context: State<Context>, path: &str)  -> Result<(), AppError>
 
 //
 #[tauri::command]
-fn read_fix(context: State<Context>, input: &str, separator: &str) -> Result<FixMessage, AppError> {
+fn read_fix(context: State<Context>, input: &str) -> Result<FixMessage, AppError> {
     let state =  context.0.lock().unwrap();
     if let AppState::Loaded { converter } = &*state {
         return converter.from_str(input);
