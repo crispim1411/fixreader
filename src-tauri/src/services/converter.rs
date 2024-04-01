@@ -6,8 +6,7 @@ use quick_xml::Reader;
 use crate::models::*;
 use crate::services::Cache;
 
-const DELIMITER_1: &'static str = "\x01";
-const DELIMITER_2: &'static str = "|";
+const DELIMITERS: [&'static str; 3] = ["|", "^A ", "\x01"];
 
 pub struct FixConverter {
     pub schema: Option<FixSchema>,
@@ -39,13 +38,8 @@ impl FixConverter {
     }
 
     pub fn from_str(&self, input: &str) -> Result<FixMessage, AppError> {
-        let delimiter = 
-            if input.contains(DELIMITER_1) { DELIMITER_1 } 
-            else if input.contains(DELIMITER_2) { DELIMITER_2 }
-            else {
-                return Err("Separador inválido".into());
-            };
-
+        let delimiter = FixConverter::get_delimiter(input)?;
+        
         let tag_values = input
             .split(delimiter)
             .take_while(|&element| !element.is_empty())
@@ -66,7 +60,16 @@ impl FixConverter {
         }   
 
         return Ok(FixMessage { values });
-    }    
+    }
+
+    fn get_delimiter(input: &str) -> Result<&str, AppError> {
+        for delimiter in DELIMITERS {
+            if input.contains(delimiter) {
+                return Ok(delimiter);
+            }
+        }
+        return Err("Separador inválido".into());
+    }
 
     fn parse_tags<'a, I>(&self, tag_values: I) -> Vec<TagValue>
     where 
