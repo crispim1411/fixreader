@@ -5,5 +5,6 @@ interface FixMsg {
   
 interface Field {
     tag: string,
+    title: string,
     value: string,
 }

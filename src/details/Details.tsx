@@ -5,6 +5,7 @@ type DetailsProps = {
 }
 
 const Details = ({ line } : DetailsProps) => {
+    line.values = line.values.sort((a, b) => Number(a.tag) > Number(b.tag) ? 1 : -1)
     const details = (msg: FixMsg ) => {
         return (
             <table className="details-table">
@@ -12,7 +13,8 @@ const Details = ({ line } : DetailsProps) => {
                 {
                     msg.values.map((field, index) => 
                         (<tr key={index}>
-                            <td> {field.tag}</td>
+                            <td>{field.tag}</td>
+                            <td>{field.title}</td>
                             <td>{field.value}</td>
                         </tr>)
                     )
