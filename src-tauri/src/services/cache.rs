@@ -15,7 +15,7 @@ lazy_static! {
 pub struct Cache;
 
 impl Cache {
-   pub  fn save(data: &str) -> Result<(), AppError>  {
+   pub fn save(data: &str) -> Result<(), AppError>  {
         let folder_path = &*FOLDER_PATH;
         fs::create_dir_all(&folder_path).expect("Error creating cache folder on appdata");
         let cache_path = format!("{folder_path}/{CACHE_FILENAME}");

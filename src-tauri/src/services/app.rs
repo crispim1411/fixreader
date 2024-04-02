@@ -1,9 +1,7 @@
 use std::sync::Mutex;
-
 use tauri::{State, Manager};
 
 use crate::models::*;
-
 use crate::services::FixConverter;
 
 struct Context(Mutex<AppState>);

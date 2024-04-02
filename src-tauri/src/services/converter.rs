@@ -1,12 +1,11 @@
 use std::collections::HashSet;
 use std::path::Path;
-
 use quick_xml::Reader;
 
 use crate::models::*;
 use crate::services::Cache;
 
-const DELIMITERS: [&'static str; 3] = ["|", "^A ", "\x01"];
+const DELIMITERS: [&'static str; 4] = ["|", "^A ", "\x01", "\\x01"];
 
 pub struct FixConverter {
     pub schema: Option<FixSchema>,
@@ -79,13 +78,13 @@ impl FixConverter {
             .map(|(tag, value)| {
                 if let Some(field) = self.find_field_by_tag(tag) {
                     if let Some(description) = self.find_field_description(value, field) {
-                        return (field.name.clone(), description);
+                        return (tag.to_string(), field.name.clone(), description);
                     }
-                    return (field.name.to_string(), value.to_string());
+                    return (tag.to_string(), field.name.to_string(), value.to_string());
                 }
-                return (tag.to_string(), value.to_string());
+                return (tag.to_string(), String::new(), value.to_string());
             })
-            .map(|(tag, value)| TagValue { tag, value })
+            .map(|x| TagValue::from(x))
             .collect()
     }
 

@@ -8,7 +8,14 @@ pub struct FixMessage {
 #[derive(Serialize, Deserialize)]
 pub struct TagValue {
     pub tag: String,
+    pub title: String,
     pub value: String,
+}
+
+impl From<(String, String, String)> for TagValue {
+    fn from(value: (String, String, String)) -> Self {
+        TagValue { tag: value.0, title: value.1, value: value.2 }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
