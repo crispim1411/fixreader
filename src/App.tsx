@@ -10,7 +10,7 @@ const App = () => {
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
-  const [hideMap, setHideMap] = useState<Map<number, boolean>>(new Map());
+  const [showMap, setShowMap] = useState(-1);
 
   useEffect(() => {
     invoke("get_schema_file").then((response) => {
@@ -37,7 +37,6 @@ const App = () => {
       setCounter(counter + 1);
       setConvertedLines([...convertedLines, fixMsg]);
       setInput("");
-      setHideMap(map => new Map(map.set(fixMsg.id, false)))
     } catch (error) {
       setError(`Error: ${error}`);
     }
@@ -75,7 +74,7 @@ const App = () => {
 
   // forms
   return (
-    <div className="fix-reader-container">
+    <div className="fix-reader-container" style={{paddingBottom: "100%", overflow: "hidden"}}>
       <h1 className="fix-reader-title">FixReader</h1>
       <div className="error-section" hidden={error == null}>
         <span>{error}</span>
@@ -108,7 +107,8 @@ const App = () => {
           convertedLines.map(msg => (
             <><tr key={msg.id}>
               <td className="fixLine" 
-                onClick={(_) => setHideMap(map => new Map(map.set(msg.id, !map.get(msg.id))))}>
+                style={{"cursor": "pointer"}}
+                onClick={(_) => showMap == msg.id ? setShowMap(-1) : setShowMap(msg.id)}>
                 {
                   msg.values
                     .map(field => field.tag + ": " + field.value).join(" | ")
@@ -118,7 +118,7 @@ const App = () => {
                 <button className="removeLine" onClick={() => removeLine(msg.id)}>X</button>
               </td>
             </tr>
-            <div className="collapsible" onClick={(_) => setHideMap(map => new Map(map.set(msg.id, !map.get(msg.id))))} style={{"height": hideMap.get(msg.id) ? "auto" : 0, "overflow": "clip"}}>
+            <div className="collapsible " style={{"height": showMap == msg.id ? "auto" : 0, "overflow": "clip", "cursor": "text"}}>
                 <Details line={msg}/>
             </div></>
           ))
