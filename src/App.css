@@ -1,5 +1,4 @@
 .fix-reader-container {
-  height: 100vh;
   padding: 20px;
   align-content:safe;
   margin: 5%;
@@ -30,14 +29,6 @@ div label {
   display: block;
   padding: 10px;
   border: 1px solid red;
-}
-
-.collapsible {
-  width: 100%;
-  border: none;
-  margin-bottom: 0;
-  text-align: left;
-  font-size: 15px;
 }
 
 @media (prefers-color-scheme: dark) {

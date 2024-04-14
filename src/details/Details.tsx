@@ -9,6 +9,14 @@ const Details = ({ line } : DetailsProps) => {
     const details = (msg: FixMsg ) => {
         return (
             <table className="details-table">
+                <thead>
+                    <tr>
+                        <td>Tag</td>
+                        <td>Description</td>
+                        <td>Value</td>
+                        <td>Required</td>
+                    </tr>
+                </thead>
                 <tbody>
                 {
                     msg.values.map((field, index) => 

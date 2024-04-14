@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import "./form.css";
 
 interface FormProps {
-    handleReadFix: (input: string) => void,
+    handleReadFix: (input: string[]) => void,
     handleError: (error: string) => void,
     handleClear: () => void
   }
@@ -40,8 +40,7 @@ const Form = ({handleReadFix, handleError, handleClear} : FormProps) => {
       e.preventDefault();
       if (input.length == 0) return;
       try {
-        await handleReadFix(input);
-        setInput("");
+        await handleReadFix([input]);
       } catch (error) {
         handleError(error as string);
       }
@@ -56,6 +55,18 @@ const Form = ({handleReadFix, handleError, handleClear} : FormProps) => {
         })
       if (selected !== null && typeof selected === 'string') {
         await setSchema(selected);
+      }
+    }
+
+    const handleClipboard = async () => {
+      const text = await navigator.clipboard.readText();
+      if (text == "") {
+        handleError("No message on clipboard");
+      } 
+      try {
+        await handleReadFix(text.split("\n"));
+      } catch (error) {
+        handleError(error as string);
       }
     }
   
@@ -76,6 +87,7 @@ const Form = ({handleReadFix, handleError, handleClear} : FormProps) => {
             onChange={(e) => setInput(e.currentTarget.value)}
           />
           <button type="submit">Convert</button>
+          <button onClick={handleClipboard}>Paste Clipboard</button>
           <button onClick={handleClear}>Clear</button>
         </form>
       </>

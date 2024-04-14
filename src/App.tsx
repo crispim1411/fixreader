@@ -18,11 +18,15 @@ const App = () => {
     setConvertedLines([]);
   }
 
-  const readFix = async (input: string) => {
-    var fixMsg: FixMsg = await invoke("read_fix", { input });
-    fixMsg.id = counter;
-    setCounter(counter + 1);
-    setConvertedLines([...convertedLines, fixMsg]);
+  const readFix = async (inputs: string[]) => {
+    var loopCounter = counter;
+    for (var input of inputs) {
+      var fixMsg: FixMsg = await invoke("read_fix", { input });
+      loopCounter += 1;
+      fixMsg.id = loopCounter;
+      setConvertedLines(oldValue => [...oldValue, fixMsg]);
+    }
+    setCounter(loopCounter);
   }
 
   const removeLine = (id: number) => {
