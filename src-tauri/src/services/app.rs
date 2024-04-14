@@ -16,15 +16,21 @@ fn get_schema_file(state: State<Context>) -> Result<String, AppError> {
     let Ok(state) = state.0.lock() else {
         return Err("Error reading app state".into());
     };
-    if let AppState::Loaded { converter } = &*state {
-        return Ok(converter.filename.clone());
+    match &*state {
+        AppState::Loaded { converter } => {
+            return Ok(converter.filename.clone());
+        }
+        AppState::Unloaded { error } => {
+            return Err(error.clone());
+        }
     }
-    return Err("No file".into());
 }
 
 #[tauri::command]
 fn set_schema_file(context: State<Context>, path: &str)  -> Result<(), AppError> {
-    let mut state = context.0.lock().unwrap();
+    let Ok(mut state) = context.0.lock() else {
+        return Err("Error reading app state".into());
+    };
 
     let mut converter = FixConverter::new();
     converter.load_from(path)?;
@@ -33,14 +39,19 @@ fn set_schema_file(context: State<Context>, path: &str)  -> Result<(), AppError>
     Ok(())
 }
 
-//
 #[tauri::command]
 fn read_fix(context: State<Context>, input: &str) -> Result<FixMessage, AppError> {
-    let state =  context.0.lock().unwrap();
-    if let AppState::Loaded { converter } = &*state {
-        return converter.from_str(input);
+    let Ok(state) = context.0.lock() else {
+        return Err("Error reading app state".into());
     };
-    return Err("Error reading app state".into());
+    match &*state {
+        AppState::Loaded { converter } => {
+            return converter.from_str(input);
+        }
+        AppState::Unloaded { error } => {
+            return Err(error.clone());
+        }
+    }
 }
 
 

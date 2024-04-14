@@ -1,7 +1,7 @@
 use std::io;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AppError(String);
 
 impl From<&str> for AppError {
