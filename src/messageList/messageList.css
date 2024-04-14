@@ -1,0 +1,32 @@
+.converted-table {
+    border-collapse: collapse;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.converted-table th,
+.converted-table .fixLine {
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-width: 500px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.converted-table .removeLine {
+    margin-left: 10px;
+    padding: 5px;
+    padding-right: 10px;
+    padding-left: 10px;
+    font-weight: bold;
+}
+
+.collapsible {
+    width: 100%;
+    border: none;
+    margin-bottom: 0;
+    text-align: left;
+    font-size: 15px;
+}

@@ -1,50 +1,28 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
-import { open } from "@tauri-apps/api/dialog";
-import Details from "./details/Details";
+
+import MessageList from "./messageList/messageList";
+import Form from "./form/form";
 
 const App = () => {
-  const [schemaFile, setSchemaFile] = useState("");
-  const [input, setInput] = useState("");
   const [convertedLines, setConvertedLines] = useState<FixMsg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [counter, setCounter] = useState(0);
-  const [showMap, setShowMap] = useState(-1);
-
-  useEffect(() => {
-    invoke("get_schema_file").then((response) => {
-      setSchemaFile(response as string);
-    }).catch((_) => {
-      setSchemaFile('not loaded');
-    });
-  }, []);
-
-  useEffect(() => {
-    if (error == null) return;
-    const timer = setTimeout(() => {
-      setError(null);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [error]);
-
-  const readFix = async (e: any) => {
-    e.preventDefault();
-    if (input.length == 0) return;
-    try {
-      var fixMsg: FixMsg = await invoke("read_fix", { input });
-      fixMsg.id = counter;
-      setCounter(counter + 1);
-      setConvertedLines([...convertedLines, fixMsg]);
-      setInput("");
-    } catch (error) {
-      setError(`Error: ${error}`);
-    }
+  
+  const handleError = (error: string) => {
+    setError(`Error: ${error}`);
   }
 
   const clear = () => {
-    setInput("");
     setConvertedLines([]);
+  }
+
+  const readFix = async (input: string) => {
+    var fixMsg: FixMsg = await invoke("read_fix", { input });
+    fixMsg.id = counter;
+    setCounter(counter + 1);
+    setConvertedLines([...convertedLines, fixMsg]);
   }
 
   const removeLine = (id: number) => {
@@ -54,77 +32,28 @@ const App = () => {
     convertedLines.splice(index, 1);
     setConvertedLines([...convertedLines]);
   }
+  
+  useEffect(() => {
+    if (error == null) return;
+    const timer = setTimeout(() => {
+      setError(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [error]);
 
-  const selectFileClick = async () => {
-    const selected = await open({
-      filters: [{
-        name: 'Schema Fix',
-        extensions: ['xml']
-      }]
-    })
-    if (selected !== null && typeof selected === 'string') {
-      try {
-        await invoke("set_schema_file", { path: selected });
-        setSchemaFile(selected);
-      } catch (error) {
-        setError(`Error: ${error}`);
-      }
-    }
-  }
-
-  // forms
   return (
     <div className="fix-reader-container" style={{paddingBottom: "100%", overflow: "hidden"}}>
       <h1 className="fix-reader-title">FixReader</h1>
       <div className="error-section" hidden={error == null}>
         <span>{error}</span>
       </div>
-      <div>
-        <label htmlFor="schemaFile">Schema:</label>
-        <button onClick={selectFileClick}>{schemaFile}</button>
-      </div>
-      <form
-        className="input-section"
-        onSubmit={readFix}>
-        <label htmlFor="message">Message:</label>
-        <input
-          type="text"
-          id="message"
-          value={input}
-          onChange={(e) => setInput(e.currentTarget.value)}
-        />
-        <button type="submit">Convert</button>
-        <button onClick={clear}>Clear</button>
-      </form>
-      <table className="converted-table">
-        <thead>
-          <tr>
-            <th>Converted Lines</th>
-          </tr>
-        </thead>
-        <tbody>
-        {
-          convertedLines.map(msg => (
-            <><tr key={msg.id}>
-              <td className="fixLine" 
-                style={{"cursor": "pointer"}}
-                onClick={(_) => showMap == msg.id ? setShowMap(-1) : setShowMap(msg.id)}>
-                {
-                  msg.values
-                    .map(field => field.tag + ": " + field.value).join(" | ")
-                }
-              </td>
-              <td>
-                <button className="removeLine" onClick={() => removeLine(msg.id)}>X</button>
-              </td>
-            </tr>
-            <div className="collapsible " style={{"height": showMap == msg.id ? "auto" : 0, "overflow": "clip", "cursor": "text"}}>
-                <Details line={msg}/>
-            </div></>
-          ))
-        }
-        </tbody>
-      </table>
+      <Form 
+        handleError={handleError} 
+        handleReadFix={readFix} 
+        handleClear={clear} />
+      <MessageList 
+        lines={convertedLines} 
+        handleRemoveLine={removeLine} />
     </div>
   );
 }
