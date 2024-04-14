@@ -2,19 +2,20 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct FixMessage {
-    pub values: Vec<TagValue>,
+    pub values: Vec<FieldConverted>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct TagValue {
-    pub tag: String,
-    pub title: String,
-    pub value: String,
+pub struct FieldConverted {
+    tag: String,
+    title: String,
+    value: String,
+    required: bool,
 }
 
-impl From<(String, String, String)> for TagValue {
-    fn from(value: (String, String, String)) -> Self {
-        TagValue { tag: value.0, title: value.1, value: value.2 }
+impl From<(String, String, String, bool)> for FieldConverted {
+    fn from(value: (String, String, String, bool)) -> Self {
+        FieldConverted { tag: value.0, title: value.1, value: value.2, required: value.3 }
     }
 }
 

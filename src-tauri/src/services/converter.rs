@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::path::Path;
 use quick_xml::Reader;
 
@@ -44,19 +43,13 @@ impl FixConverter {
             .take_while(|&element| !element.is_empty())
             .filter_map(|x| x.split_once('='));
 
-        let values = self.parse_tags(tag_values);
+        let msg_schema = 
+            match tag_values.clone().find(|x| x.0 == "35") {
+                Some(item) => self.find_msgtype(item.1),
+                None => None
+            };
 
-        let validate = false;
-        if validate {
-            // let Some(msg_type) = tag_values.filter(|t| t.0 == "35").next() else {
-            //     return Err("MessageType não presente na mensagem!".into());
-            // };
-            // println!("MsgType: {:?}", msg_type);
-            // let Some(msg_schema) = self.find_msgtype(msg_type.1) else {
-            //     return Err("Tipo de mensagem não suportado".into());
-            // };
-            // self.validate(&values, &msg_schema)?;
-        }   
+        let values = self.parse_tags(tag_values, msg_schema.as_ref());
 
         return Ok(FixMessage { values });
     }
@@ -70,21 +63,27 @@ impl FixConverter {
         return Err("Separador inválido".into());
     }
 
-    fn parse_tags<'a, I>(&self, tag_values: I) -> Vec<TagValue>
+    fn parse_tags<'a, I>(&self, tag_values: I, msg_schema: Option<&Message>) -> Vec<FieldConverted>
     where 
         I: Iterator<Item=(&'a str, &'a str)> 
     {    
         tag_values
             .map(|(tag, value)| {
+                let mut field_name = String::new();
+                let mut description = value.to_string();
+                let mut requirement = false;
                 if let Some(field) = self.find_field_by_tag(tag) {
-                    if let Some(description) = self.find_field_description(value, field) {
-                        return (tag.to_string(), field.name.clone(), description);
+                    if let Some(field_description) = FixConverter::find_field_description(value, field) {
+                        description = field_description;
                     }
-                    return (tag.to_string(), field.name.to_string(), value.to_string());
+                    if let Some(msg_schema) = msg_schema {
+                        requirement = self.find_requirement(&field, msg_schema);
+                    }
+                    field_name = field.name.clone();
                 }
-                return (tag.to_string(), String::new(), value.to_string());
+                return (tag.to_string(), field_name, description, requirement);
             })
-            .map(|x| TagValue::from(x))
+            .map(|x| FieldConverted::from(x))
             .collect()
     }
 
@@ -107,7 +106,7 @@ impl FixConverter {
         }
         None
     }
-
+    
     fn find_field_by_tag(&self, tag: &str) -> Option<&Field> {
         let Some(schema) = &self.schema else { 
             panic!("Tentativa de parsear sem schema carregado!");
@@ -117,44 +116,28 @@ impl FixConverter {
             .find(|item| &item.number == tag);
     }
 
-    fn find_field_description(&self, key: &str, field: &Field) -> Option<String> {
+    fn find_field_description(key: &str, field: &Field) -> Option<String> {
         if let Some(field) = field.values.iter().find(|item| &item.value == key) {
             return Some(field.description.clone());
         }  
         return None;
     }
 
-    fn validate(&self, values: &Vec<(String, String)>, msg: &Message) -> Result<(), AppError> {
+    fn find_requirement(&self, field: &Field, msg_schema: &Message) -> bool {
         let Some(schema) = &self.schema else { 
             panic!("Tentativa de parsear sem schema carregado!");
         };
 
-        let required_headers: Vec<&str> = schema.header.values.iter().filter(|x| x.required == "Y")
-            .map(|f| f.name.as_ref()).collect();
-        let required_trailers: Vec<&str> = schema.header.values.iter().filter(|x| x.required == "Y")
-            .map(|f| f.name.as_ref()).collect();
-        let required_fields: Vec<&str> = msg.fields.iter().filter(|x| x.required == "Y")
-            .map(|f| f.name.as_ref()).collect();
+        if let Some(header_field) = schema.header.values.iter().find(|x| x.name == field.name) {
+            return header_field.required == "Y";
+        }
+        if let Some(trailer_field) = schema.trailer.values.iter().find(|x| x.name == field.name) {
+            return trailer_field.required == "Y";
+        }
+        if let Some(field) = msg_schema.fields.iter().find(|x| x.name == field.name) {
+            return field.required == "Y";
+        }
 
-        let mut missing_fields = HashSet::new();
-        for required_header in required_headers {
-            if values.iter().find(|v| v.0 == required_header).is_none() { 
-                missing_fields.insert(required_header);
-            }
-        }
-        for required_trailer in required_trailers {
-            if values.iter().find(|v| v.0 == required_trailer).is_none() {
-                missing_fields.insert(required_trailer);
-            }
-        }
-        for required_field in required_fields {
-            if values.iter().find(|v| v.0 == required_field).is_none() {
-                missing_fields.insert(required_field);
-            }
-        } 
-        if missing_fields.len() != 0 {
-            return Err(format!("Missing fields {missing_fields:?}").into());
-        }
-        Ok(())
+        return false;
     }
 }

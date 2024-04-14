@@ -7,4 +7,5 @@ interface Field {
     tag: string,
     title: string,
     value: string,
+    required: boolean,
 }

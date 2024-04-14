@@ -12,10 +12,11 @@ const Details = ({ line } : DetailsProps) => {
                 <tbody>
                 {
                     msg.values.map((field, index) => 
-                        (<tr key={index}>
+                        (<tr key={`details_${line.id}_${index}`}>
                             <td>{field.tag}</td>
                             <td>{field.title}</td>
                             <td>{field.value}</td>
+                            <td>{field.required ? "Y" : ""}</td>
                         </tr>)
                     )
                 }
